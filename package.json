@@ -1,0 +1,13 @@
+{
+  "name": "mp-php",
+  "version": "0.0.1",
+  "description": "Microparser profile for PHP",
+  "main": "index.js",
+  "repository": "https://github.com/srobfr/mp-php",
+  "author": "Simon Robert <srob@srob.fr>",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "microparser": "^5.0.2"
+  }
+}
