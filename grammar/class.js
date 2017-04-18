@@ -3,14 +3,28 @@ const {multiple, not, optional, optmul, or} = require("microparser").grammarHelp
 const {descHelper} = require(__dirname + "/../helpers.js");
 
 module.exports = function (g) {
+    g.classUse = [
+        g.optDoc,
+        "use", g.w,
+        g.fqn,
+        optional([g.w, "as", g.w, g.ident]),
+        g.ow, g.semicolon
+    ];
+    g.classUse.default = "use TODO;";
+
     g.classBodyItemsSeparator = optmul(or(g.w, g.commentLine, g.commentBlock));
     g.classBodyItemsSeparator.default = ($parent) => {
         const indent = $parent.getIndent();
         return `\n\n${indent}`;
     };
+    g.classBodyItemsSeparator.decorator = function($classBodyItemsSeparator) {
+        $classBodyItemsSeparator.fix = function() {
+            $classBodyItemsSeparator.text(g.classBodyItemsSeparator.default($classBodyItemsSeparator.parent));
+        };
+    };
 
     g.classBodyItems = optmul(
-        or(g.method, g.property, g.constant, g.use),
+        or(g.method, g.property, g.constant, g.classUse),
         g.classBodyItemsSeparator
     );
     g.classBodyItems.order = [
@@ -24,7 +38,12 @@ module.exports = function (g) {
         }
     ];
 
-    g.classBody = ["{", g.classBodyItemsSeparator, g.classBodyItems, g.classBodyItemsSeparator, "}"];
+    g.classBodyStart = optmul(or(g.w, g.commentLine, g.commentBlock));
+    g.classBodyStart.default = ($parent) => `\n${$parent.getIndent()}`;
+    g.classBodyEnd = optmul(or(g.w, g.commentLine, g.commentBlock));
+    g.classBodyEnd.default = "\n";
+
+    g.classBody = ["{", g.classBodyStart, g.classBodyItems, g.classBodyEnd, "}"];
     g.classBody.indent = g.INDENT;
 
     g.className = [g.ident];

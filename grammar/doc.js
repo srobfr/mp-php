@@ -14,7 +14,7 @@ module.exports = function (g) {
     // Annotations
     g.docAnnotationIdent = ["@", g.fqn];
 
-    g.docLine = /^(.(?! *(?:\n|\r|\*\/)))*./; // Everything up to \n, \r ou "*/"
+    g.docLine = /^(.(?!(?:\n|\r|\*\/)))*./; // Everything up to \n, \r ou "*/"
     g.notAnnotationDocLine = [not(g.docAnnotationIdent), g.docLine];
 
     g.docAnnotationValue = optmul(g.notAnnotationDocLine, g.mulDocNL);
@@ -95,9 +95,9 @@ module.exports = function (g) {
         };
         $doc.fix = function() {
             const indent = $doc.getIndent();
-            const hasDesc = ($doc.findOne(g.docDesc).text() !== "");
-            const hasLongDesc = ($doc.findOne(g.docLongDesc).text() !== "");
-            const hasAnnotations = ($doc.findOne(g.docAnnotations).text() !== "");
+            const hasDesc = ($doc.findOne(g.docDesc).text().trim() !== "");
+            const hasLongDesc = ($doc.findOne(g.docLongDesc).text().trim() !== "");
+            const hasAnnotations = ($doc.findOne(g.docAnnotations).text().trim() !== "");
 
             if (!hasDesc && !hasLongDesc && !hasAnnotations) $doc.text(`/**\n${indent} *\n${indent} */`);
             else {

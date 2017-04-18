@@ -19,6 +19,14 @@ module.exports = function (g) {
         };
     };
 
+    g.use = [
+        "use", g.w,
+        g.fqn,
+        optional([g.w, "as", g.w, g.ident]),
+        g.ow, g.semicolon
+    ];
+    g.use.default = "use TODO;";
+
     g.file = [
         g.phpBlockStart, g.owDefaultNextLine,
         g.fileDoc,
