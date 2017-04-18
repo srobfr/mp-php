@@ -60,5 +60,20 @@ module.exports = function (g) {
         };
     };
 
-    // TODO
+    g.methodMarkers = optmul([
+        or(g.visibility, g.final, g.abstract, g.static),
+        g.wDefaultOneSpace
+    ]);
+    g.methodMarkers.order = [g.final, g.abstract, g.static, g.visibility];
+
+    g.method = [g.optDoc, g.methodMarkers, g.func];
+    g.method.default = ($parent) => {
+        const indent = $parent.getIndent();
+        return `${indent}/**\n${indent} * TODO\n${indent} */\n${indent}public function todo()\n${indent}{\n${g.funcBody.indent}// TODO\n${indent}}`;
+    };
+    g.method.decorator = function ($node) {
+        $node.body = (body => $node.findOne(g.funcBody).body(body));
+        $node.name = (name => $node.findOne(g.func).name(name));
+        $node.desc = (desc) => descHelper($node, desc);
+    };
 };

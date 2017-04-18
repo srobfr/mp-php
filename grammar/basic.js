@@ -12,6 +12,9 @@ module.exports = function (g) {
     g.wDefaultOneSpace = [g.w];
     g.wDefaultOneSpace.default = " ";
 
+    g.owDefaultOneSpace = [g.ow];
+    g.owDefaultOneSpace.default = " ";
+
     g.owOrCommentsDefaultOneSpace = [g.owOrComments];
     g.owOrCommentsDefaultOneSpace.default = " ";
 
@@ -71,4 +74,12 @@ module.exports = function (g) {
     g.abstract = "abstract";
     g.static = "static";
     g.final = "final";
+
+    g.use = [
+        "use", g.w,
+        g.fqn,
+        optional([g.w, "as", g.w, g.ident]),
+        g.ow, g.semicolon
+    ];
+    g.use.default = "use TODO;";
 };
