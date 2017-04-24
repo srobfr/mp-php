@@ -3,8 +3,9 @@ const {multiple, not, optional, optmul, or} = require("microparser").grammarHelp
 const {descHelper} = require(__dirname + "/../helpers.js");
 
 module.exports = function (g) {
+    g.funcArgType = [optional("?"), g.fqn];
     g.funcArg = [
-        optional([g.fqn, g.w]),
+        optional([g.funcArgType, g.w]),
         optional("&"),
         g.variable, optional(g.defaultValue)
     ];

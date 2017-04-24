@@ -64,6 +64,13 @@ module.exports = function (g) {
     };
 
     g.docAnnotations = optmul(g.docAnnotation, g.annotationsSeparator);
+    g.docAnnotations.order = [
+        ($node) => $node.findOne(g.docAnnotationIdent).text(),
+        ($node) => {
+            if ($node.findOne(g.docAnnotationIdent).text() !== "@param") return 0;
+            return 0; // TODO Corriger l'ordre d'insertion des @param en fonction de l'ordre des arguments de la méthode
+        }
+    ];
 
     g.doc = [
         g.docStart, g.optMulDocNL1,

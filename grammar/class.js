@@ -28,13 +28,14 @@ module.exports = function (g) {
         g.classBodyItemsSeparator
     );
     g.classBodyItems.order = [
+        g.classUse,
         g.constant,
         g.property,
         g.method,
         g.public, g.protected, g.private,
-        (node) => {
-            const $subNode = (node.findOne(g.variable) || node.findOne(g.func) || node.findOne(g.constantIdent));
-            return ($subNode || node).findOne(g.ident).text();
+        ($node) => {
+            const $subNode = ($node.findOne(g.variable) || $node.findOne(g.func) || $node.findOne(g.constantIdent));
+            return ($subNode || $node).findOne(g.ident).text();
         }
     ];
 
