@@ -1,6 +1,6 @@
 {
   "name": "mp-php",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Microparser profile for PHP",
   "main": "index.js",
   "repository": "https://github.com/srobfr/mp-php",
