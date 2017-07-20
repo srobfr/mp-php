@@ -14,7 +14,7 @@ module.exports = function (g) {
     // Annotations
     g.docAnnotationIdent = ["@", g.fqn];
 
-    g.docLine = /^(.(?! *(?:\n|\r|\*\/)))*./; // Everything up to \n, \r ou "*/"
+    g.docLine = /^(.(?!(?:\n|\r|\*\/)))*./; // Everything up to \n, \r ou "*/"
     g.notAnnotationDocLine = [not(g.docAnnotationIdent), g.docLine];
 
     g.docAnnotationValue = optmul(g.notAnnotationDocLine, g.mulDocNL);
@@ -49,8 +49,8 @@ module.exports = function (g) {
     g.optMulDocNL3 = optional(g.mulDocNL);
     g.optMulDocNL3.default = "";
 
-    g.annotationsSeparator = [g.mulDocNL];
-    g.annotationsSeparator.decorator = function($annotationsSeparator) {
+    g.docAnnotationsSeparator = [g.mulDocNL];
+    g.docAnnotationsSeparator.decorator = function($annotationsSeparator) {
         $annotationsSeparator.fix = function() {
             let prevAnnotationIdent = $annotationsSeparator.prev.findOne(g.docAnnotationIdent).text();
             let nextAnnotationIdent = $annotationsSeparator.next.findOne(g.docAnnotationIdent).text();
@@ -63,7 +63,14 @@ module.exports = function (g) {
         };
     };
 
-    g.docAnnotations = optmul(g.docAnnotation, g.annotationsSeparator);
+    g.docAnnotations = optmul(g.docAnnotation, g.docAnnotationsSeparator);
+    g.docAnnotations.order = [
+        ($node) => $node.findOne(g.docAnnotationIdent).text(),
+        ($node) => {
+            if ($node.findOne(g.docAnnotationIdent).text() !== "@param") return 0;
+            return 0; // TODO Corriger l'ordre d'insertion des @param en fonction de l'ordre des arguments de la méthode
+        }
+    ];
 
     g.doc = [
         g.docStart, g.optMulDocNL1,
@@ -82,22 +89,25 @@ module.exports = function (g) {
             if (desc === undefined) return $docDesc.text();
 
             $docDesc.text(desc || "");
+            $doc.fix();
+        };
+        $doc.longDesc = (longDesc) => {
+            const $docLongDesc = $doc.findOne(g.docLongDesc);
+            if (longDesc === undefined) return $docLongDesc.text();
 
-            const hasSuite = !!$doc.findOne((n) => (n.grammar === g.docLongDesc || n.grammar === g.docAnnotations) && n.text() !== "");
             const indent = $doc.getIndent();
-            if ($docDesc.text() === "") {
-                $docDesc.prev.text(hasSuite ? "" : `\n${indent} *`);
-                $docDesc.next.text("");
-            } else {
-                $docDesc.prev.text(`\n${indent} * `);
-                $docDesc.next.text(hasSuite ? `\n${indent} *\n${indent} * ` : "");
-            }
+
+            if (longDesc === null) $docLongDesc.text("");
+            else $docLongDesc.text(longDesc.replace(/\n/g, `\n${indent} * `).replace(/ +(\n|$)/g, "\n").trim());
+            $doc.fix();
         };
         $doc.fix = function() {
             const indent = $doc.getIndent();
-            const hasDesc = ($doc.findOne(g.docDesc).text() !== "");
-            const hasLongDesc = ($doc.findOne(g.docLongDesc).text() !== "");
-            const hasAnnotations = ($doc.findOne(g.docAnnotations).text() !== "");
+            const hasDesc = ($doc.findOne(g.docDesc).text().trim() !== "");
+            const hasLongDesc = ($doc.findOne(g.docLongDesc).text().trim() !== "");
+
+            const $docAnnotations = $doc.findOne(g.docAnnotations);
+            const hasAnnotations = ($docAnnotations.text().trim() !== "");
 
             if (!hasDesc && !hasLongDesc && !hasAnnotations) $doc.text(`/**\n${indent} *\n${indent} */`);
             else {
@@ -107,13 +117,24 @@ module.exports = function (g) {
                 $doc.children[5].text((hasDesc || hasLongDesc) && hasAnnotations ? `\n${indent} *\n${indent} * ` : "");
                 $doc.children[7].text("");
                 $doc.children[8].text(`\n${indent} */`);
+
+                _.each($docAnnotations.find(g.docAnnotationsSeparator), $docAnnotationsSeparator => $docAnnotationsSeparator.fix());
             }
         };
         $doc.removeAnnotation = function($annotation) {
             const $docAnnotations = $doc.findOne(g.docAnnotations);
             $docAnnotations.remove($annotation);
             $doc.fix();
-        }
+        };
+        $doc.removeParamAnnotation = function(name) {
+            const $docAnnotations = $doc.findOne(g.docAnnotations);
+            const $annotation = $docAnnotations.findOne(($node) => {
+                if ($node.grammar !== g.docAnnotation || $node.findOne(g.docAnnotationIdent).text() !== "@param") return false;
+                if ($node.findOne(g.docAnnotationValue).text().match(new RegExp("\\$" + name + "($|[^\w])"))) return true;
+            });
+            if ($annotation) $docAnnotations.remove($annotation);
+            $doc.fix();
+        };
     };
 
     g.optDoc = optional([g.doc, g.owDefaultNextLine]);
