@@ -82,6 +82,23 @@ module.exports = function (g) {
             return $node;
         });
         $node.desc = (desc) => descHelper(g, $node, desc);
+        $node.type = function (type) {
+            const $optDoc = $node.findOne(g.optDoc);
+            if (type === undefined) {
+                const $doc = $optDoc.findOne(g.doc);
+                if (!$doc) return null;
+                const $docAnnotations = $doc.findOne(g.docAnnotations);
+                const $annotation = $docAnnotations.findOne(($node) => ($node.grammar === g.docAnnotation && $node.findOne(g.docAnnotationIdent).text() === "@return"));
+                if (!$annotation) return null;
+                return $annotation.findOne(g.docAnnotationValue).text().trim() || null;
+            }
+
+            const $doc = $optDoc.getOrCreateChild().findOne(g.doc);
+            const $docAnnotations = $doc.findOne(g.docAnnotations);
+            const $annotation = $docAnnotations.findOne(($node) => ($node.grammar === g.docAnnotation && $node.findOne(g.docAnnotationIdent).text() === "@return"));
+            if ($annotation) $doc.removeAnnotation($annotation);
+            $docAnnotations.add("@return " + type);
+        };
         $node.setArg = function (arg) {
             let $funcArgs = $node.findOne(g.funcArgs);
             let $arg = $funcArgs.findOne(($node) => {
