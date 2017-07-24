@@ -22,7 +22,7 @@ module.exports = function (g) {
 
     // Description (first line)
     g.docDesc = optional(g.notAnnotationDocLine);
-    g.docDesc.default = "TODO";
+    g.docDesc.default = "";
 
     // Long description (2nd to n-th line)
     g.docLongDesc = optmul(g.notAnnotationDocLine, g.mulDocNL);
@@ -81,7 +81,7 @@ module.exports = function (g) {
     ];
     g.doc.default = ($node) => {
         const indent = $node.getIndent();
-        return `/**\n${indent} * TODO\n${indent} */`
+        return `/**\n${indent} *\n${indent} */`
     };
     g.doc.decorator = function ($doc) {
         $doc.desc = (desc) => {

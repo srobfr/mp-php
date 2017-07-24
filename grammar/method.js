@@ -75,17 +75,23 @@ module.exports = function (g) {
         return `/**\n${indent} * TODO\n${indent} */\n${indent}public function todo()\n${indent}{\n${indent}${indent}// TODO\n${indent}}`;
     };
     g.method.decorator = function ($node) {
-        $node.visibility = (visibility => $node.findOne(g.visibility).text(visibility));
-        $node.body = (body => $node.findOne(g.funcBody).body(body));
-        $node.name = (name => {
-            $node.findOne(g.func).name(name);
-            return $node;
+        $node.visibility = (visibility => {
+            const $visibility = $node.findOne(g.visibility);
+            if (visibility === null) {
+                $visibility.parent.parent.parent.remove($visibility.parent.parent);
+                return $node;
+            }
+            return $visibility ? $visibility.text(visibility) : null;
         });
+        $node.body = (body => $node.findOne(g.funcBody).body(body));
+        $node.name = (name => $node.findOne(g.func).name(name));
         $node.desc = (desc) => descHelper(g, $node, desc);
         $node.type = function (type) {
             const $optDoc = $node.findOne(g.optDoc);
+            let $doc = $optDoc.findOne(g.doc);
+
             if (type === undefined) {
-                const $doc = $optDoc.findOne(g.doc);
+
                 if (!$doc) return null;
                 const $docAnnotations = $doc.findOne(g.docAnnotations);
                 const $annotation = $docAnnotations.findOne(($node) => ($node.grammar === g.docAnnotation && $node.findOne(g.docAnnotationIdent).text() === "@return"));
@@ -93,7 +99,16 @@ module.exports = function (g) {
                 return $annotation.findOne(g.docAnnotationValue).text().trim() || null;
             }
 
-            const $doc = $optDoc.getOrCreateChild().findOne(g.doc);
+            if (type === null) {
+                if (!$doc) return null;
+                const $docAnnotations = $doc.findOne(g.docAnnotations);
+                const $annotation = $docAnnotations.findOne(($node) => ($node.grammar === g.docAnnotation && $node.findOne(g.docAnnotationIdent).text() === "@return"));
+                if (!$annotation) return null;
+                $doc.removeAnnotation($annotation);
+                return $node;
+            }
+
+            $doc = $doc || $optDoc.getOrCreateChild().findOne(g.doc);
             const $docAnnotations = $doc.findOne(g.docAnnotations);
             const $annotation = $docAnnotations.findOne(($node) => ($node.grammar === g.docAnnotation && $node.findOne(g.docAnnotationIdent).text() === "@return"));
             if ($annotation) $doc.removeAnnotation($annotation);
