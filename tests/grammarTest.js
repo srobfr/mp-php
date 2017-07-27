@@ -188,7 +188,11 @@ class Foo {
 
         _.each(dataset, (set) => {
             const grammarName = namesByGrammar.get(set.grammar);
-            if (!grammarName) console.log(require("util").inspect(set.success[0], {colors: true, hidden: true, depth: 30})); // TODO Dev
+            if (!grammarName) console.log(require("util").inspect(set.success[0], {
+                colors: true,
+                hidden: true,
+                depth: 30
+            })); // TODO Dev
             describe(grammarName, function () {
                 _.each(set.success, (code) => {
                     it("Should parse " + require("util").inspect(code.substr(0, 30), {depth: 30}), () => {

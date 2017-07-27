@@ -5,11 +5,17 @@ const {descHelper} = require(__dirname + "/../helpers.js");
 module.exports = function (g) {
     g.constantIdent = [g.ident];
     g.constant = [g.optDoc, "const", g.w, g.constantIdent, g.defaultValue, g.ow, g.semicolon];
-    g.constant.default = ($parent) => {
-        const indent = $parent.getIndent();
-        `/**\n${indent} * TODO\n${indent} */\n${indent}const TODO = 'TODO';`
-    };
-    g.constant.decorator = function ($constant) {
-        $constant.desc = (desc) => descHelper(g, $constant, desc);
+    g.constant.default = "const TODO = null;";
+    g.constant.buildNode = function (self) {
+        self.name = (name) => {
+            const $constantIdent = self.children[3];
+            const r = $constantIdent.text(name);
+            return (name === undefined ? r : self);
+        };
+        self.value = (value) => {
+            const $staticExpr = self.children[4].findOneByGrammar(g.staticExpr);
+            const r = $staticExpr.text(value);
+            return (value === undefined ? r : self);
+        };
     };
 };

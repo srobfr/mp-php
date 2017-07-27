@@ -5,7 +5,7 @@ const g = require(__dirname + "/../index.js").grammar;
 
 const parser = new Parser();
 
-describe('method', function () {
+describe.skip('method', function () {
     describe('name', function () {
         it("get", () => {
             const $method = parser.parse(g.method, `public function foo();`);
