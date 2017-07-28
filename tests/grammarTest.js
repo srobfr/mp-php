@@ -19,26 +19,6 @@ describe('Grammar', function () {
                 fail: ["", "4Foo"]
             },
             {
-                grammar: g.docAnnotationIdent,
-                success: ["@var", "@Foo"],
-                fail: ["", "@3plop", "@"]
-            },
-            {
-                grammar: g.docDesc,
-                success: ["Foo Bar", ""],
-                fail: ["Foo bar\nPlop", "Foo bar \n * Plop", "@annotation Foo plop"]
-            },
-            {
-                grammar: g.docLongDesc,
-                success: ["Foo Bar", "", "Foo bar \n * Plop"],
-                fail: ["Foo bar\nPlop", "@annotation Foo plop", "Test\n * @foo"]
-            },
-            {
-                grammar: g.docAnnotation,
-                success: ["@foo", "@var plop", `@Foo(plop=2)`, `@foo bar \n * plop\n * test`],
-                fail: ["Foo bar\nPlop", `@foo bar \n * plop\n test`]
-            },
-            {
                 grammar: g.doc,
                 success: [
                     `/** @var Foo */`,

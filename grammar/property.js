@@ -40,7 +40,7 @@ module.exports = function(g) {
             const $optDoc = $node.findOne(g.optDoc);
             const $doc = $optDoc.getOrCreateChild().findOne(g.doc);
             const $docAnnotations = $doc.findOne(g.docAnnotations);
-            const $varAnnotation = $docAnnotations.findOne($node => $node.grammar === g.docAnnotation && $node.findOne(g.docAnnotationIdent).text() === "@var");
+            const $varAnnotation = $docAnnotations.findOne($node => $node.grammar === g.docAnnotationContainer && $node.findOne(g.docAnnotationIdent).text() === "@var");
             if ($varAnnotation) $doc.removeAnnotation($varAnnotation);
             $docAnnotations.add(`@var ${type}`);
             $doc.fix();

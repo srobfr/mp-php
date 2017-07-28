@@ -7,6 +7,11 @@ module.exports = function (g) {
     g.constant = [g.optDoc, "const", g.w, g.constantIdent, g.defaultValue, g.ow, g.semicolon];
     g.constant.default = "const TODO = null;";
     g.constant.buildNode = function (self) {
+        self.desc = (desc) => {
+            const $optDoc = self.children[0];
+            const r = $optDoc.desc(desc);
+            return (desc === undefined ? r : self);
+        };
         self.name = (name) => {
             const $constantIdent = self.children[3];
             const r = $constantIdent.text(name);

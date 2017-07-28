@@ -94,7 +94,7 @@ module.exports = function (g) {
 
                 if (!$doc) return null;
                 const $docAnnotations = $doc.findOne(g.docAnnotations);
-                const $annotation = $docAnnotations.findOne(($node) => ($node.grammar === g.docAnnotation && $node.findOne(g.docAnnotationIdent).text() === "@return"));
+                const $annotation = $docAnnotations.findOne(($node) => ($node.grammar === g.docAnnotationContainer && $node.findOne(g.docAnnotationIdent).text() === "@return"));
                 if (!$annotation) return null;
                 return $annotation.findOne(g.docAnnotationValue).text().trim() || null;
             }
@@ -102,7 +102,7 @@ module.exports = function (g) {
             if (type === null) {
                 if (!$doc) return null;
                 const $docAnnotations = $doc.findOne(g.docAnnotations);
-                const $annotation = $docAnnotations.findOne(($node) => ($node.grammar === g.docAnnotation && $node.findOne(g.docAnnotationIdent).text() === "@return"));
+                const $annotation = $docAnnotations.findOne(($node) => ($node.grammar === g.docAnnotationContainer && $node.findOne(g.docAnnotationIdent).text() === "@return"));
                 if (!$annotation) return null;
                 $doc.removeAnnotation($annotation);
                 return $node;
@@ -110,7 +110,7 @@ module.exports = function (g) {
 
             $doc = $doc || $optDoc.getOrCreateChild().findOne(g.doc);
             const $docAnnotations = $doc.findOne(g.docAnnotations);
-            const $annotation = $docAnnotations.findOne(($node) => ($node.grammar === g.docAnnotation && $node.findOne(g.docAnnotationIdent).text() === "@return"));
+            const $annotation = $docAnnotations.findOne(($node) => ($node.grammar === g.docAnnotationContainer && $node.findOne(g.docAnnotationIdent).text() === "@return"));
             if ($annotation) $doc.removeAnnotation($annotation);
             $docAnnotations.add("@return " + type);
         };

@@ -8,24 +8,38 @@ const parser = new Parser();
 describe('constant', function () {
     describe('name', function () {
         it("get", () => {
-            const $const = parser.parse(g.constant, `const FOO = 2;`);
-            assert.equal($const.name(), "FOO");
+            const $constant = parser.parse(g.constant, `const FOO = 2;`);
+            assert.equal($constant.name(), "FOO");
         });
         it("set", () => {
-            const $const = parser.parse(g.constant, `const FOO = 2;`);
-            $const.name("BAR");
-            assert.equal(`const BAR = 2;`, $const.text());
+            const $constant = parser.parse(g.constant, `const FOO = 2;`);
+            $constant.name("BAR");
+            assert.equal(`const BAR = 2;`, $constant.text());
         });
     });
     describe('value', function () {
         it("get", () => {
-            const $const = parser.parse(g.constant, `const FOO = 2;`);
-            assert.equal($const.value(), "2");
+            const $constant = parser.parse(g.constant, `const FOO = 2;`);
+            assert.equal($constant.value(), "2");
         });
         it("set", () => {
-            const $const = parser.parse(g.constant, `const FOO = 2;`);
-            $const.value("'test'");
-            assert.equal(`const FOO = 'test';`, $const.text());
+            const $constant = parser.parse(g.constant, `const FOO = 2;`);
+            $constant.value("'test'");
+            assert.equal(`const FOO = 'test';`, $constant.text());
+        });
+    });
+    describe('desc', function () {
+        it("get", () => {
+            const $constant = parser.parse(g.constant, `const FOO = 2;`);
+            assert.equal($constant.desc(), null);
+        });
+        it("set", () => {
+            const $constant = parser.parse(g.constant, `const FOO = 2;`);
+            $constant.desc("Foo bar.");
+            assert.equal(`/**
+ * Foo bar.
+ */
+const FOO = 2;`, $constant.text());
         });
     });
 });
