@@ -16,6 +16,8 @@ describe('doc', function () {
             {
                 grammar: g.doc,
                 success: [
+                    `/** */`,
+                    `/**\n *\n */`,
                     `/**\n * Foo bar\n */`,
                     `/**\n* Foo bar\n */`,
                     `/** Foo bar */`,
@@ -23,8 +25,52 @@ describe('doc', function () {
                     `/** @return Foo */`,
                     `/** @param Foo $foo */`,
                     `/** @other Foo bar test. */`,
+                    `/**
+         * Test
+         * @return test
+         */`,
+                    `/**  
+                      * Test with trailing spaces  
+                      */`,
+                    `/**
+         * Test
+         * @other Foo
+         * bar test.
+         */`,
+                    `/**
+                      * Test
+                      *
+                      * Long description,
+                      * on multiple lines.
+                      *
+                      * @return test
+                      * @param $plop
+                      *
+                      * @param $test
+                      */`,
+
+                    `/** @var string */`,
                 ],
                 fail: [`/**/`, `/**\n\n*/`, `/* test */`]
+            },
+            {
+                grammar: g.docDesc,
+                success: ["Foo"],
+                fail: ["Foo\nBar", "Foo\n * Bar"]
+            },
+            {
+                grammar: g.docLongDesc,
+                success: ["Foo", "Foo\n * Bar"],
+                fail: ["Foo\nBar"]
+            },
+            {
+                grammar: g.phpDocVarAnnotation,
+                success: [
+                    "@var string",
+                    "@var array",
+                    "@var Foo[]",
+                ],
+                fail: ["Foo\nBar"]
             },
         ];
 
@@ -59,7 +105,7 @@ describe('doc', function () {
         });
     });
 
-    describe.skip('desc', function () {
+    describe('desc', function () {
         it("get empty", () => {
             const $doc = parser.parse(g.doc, `/** */`);
             assert.equal($doc.desc(), "");
@@ -77,9 +123,9 @@ describe('doc', function () {
         it("set on empty", () => {
             const $doc = parser.parse(g.doc, `/** */`);
             $doc.desc("FOO");
-            assert.equal(`/**
+            assert.equal($doc.text(), `/**
  * FOO
- */`, $doc.text());
+ */`);
         });
         it("set", () => {
             const $doc = parser.parse(g.doc, `/**
@@ -91,26 +137,143 @@ describe('doc', function () {
  */`, $doc.text());
         });
     });
+
+    describe('longDesc', function () {
+        it("get empty", () => {
+            const $doc = parser.parse(g.doc, `/** */`);
+            assert.equal($doc.longDesc(), null);
+        });
+        it("get oneline", () => {
+            const $doc = parser.parse(g.doc, `/** Foo */`);
+            assert.equal($doc.longDesc(), null);
+        });
+        it("get", () => {
+            const $doc = parser.parse(g.doc, `/**
+ * Foo
+ * Bar
+ */`);
+            assert.equal($doc.longDesc(), "Bar");
+        });
+        it("get multiline", () => {
+            const $doc = parser.parse(g.doc, `/**
+ * Foo
+ * Bar
+ * Plop
+ * Test
+ */`);
+        });
+        it("get multiline Wrong Indent", () => {
+            const $doc = parser.parse(g.doc, `/**
+ * Foo
+ * Bar
+ *Plop
+ *   Test
+ */`);
+            assert.equal($doc.longDesc(), "Bar\nPlop\n  Test");
+        });
+        it("set on empty", () => {
+            const $doc = parser.parse(g.doc, `/** Foo */`);
+            $doc.longDesc("FOO");
+            assert.equal($doc.text(), `/**
+ * Foo
+ *
+ * FOO
+ */`);
+        });
+        it("set", () => {
+            const $doc = parser.parse(g.doc, `/**
+ * Foo
+ * PLOP
+ */`);
+            $doc.longDesc("Bar");
+            assert.equal($doc.text(), `/**
+ * Foo
+ *
+ * Bar
+ */`);
+        });
+        it("set multiline", () => {
+            const $doc = parser.parse(g.doc, `/**
+ * Foo
+ * PLOP
+ */`);
+            $doc.longDesc("Bar\n\nTest\n    Foo");
+            assert.equal($doc.text(), `/**
+ * Foo
+ *
+ * Bar
+ *
+ * Test
+ *     Foo
+ */`);
+        });
+    });
 });
 
-describe.skip('optDoc', function () {
+describe('optDoc', function () {
     describe('desc', function () {
         it("get empty", () => {
             const $optDoc = parser.parse(g.optDoc, `/**
  *
- */`);
+ */
+ `);
             assert.equal($optDoc.desc(), "");
         });
         it("get existing", () => {
             const $optDoc = parser.parse(g.optDoc, `/**
  * Foo ?
- */`);
+ */
+ `);
             assert.equal($optDoc.desc(), "Foo ?");
         });
         it("set on empty", () => {
             const $optDoc = parser.parse(g.optDoc, ``);
             $optDoc.desc("FOO");
             assert.equal(`/**
+ * FOO
+ */
+`, $optDoc.text());
+        });
+        it("set", () => {
+            const $optDoc = parser.parse(g.optDoc, `/** Foo Bar */`);
+            $optDoc.desc("FOO");
+            assert.equal(`/**
+ * FOO
+ */`, $optDoc.text());
+        });
+    });
+    describe('longDesc', function () {
+        it("get empty", () => {
+            const $optDoc = parser.parse(g.optDoc, `/**
+ *
+ */
+ `);
+            assert.equal($optDoc.longDesc(), null);
+        });
+        it("get existing", () => {
+            const $optDoc = parser.parse(g.optDoc, `/**
+ * Foo ?
+ * Plop
+ */
+ `);
+            assert.equal($optDoc.longDesc(), "Plop");
+        });
+        it("set on empty", () => {
+            const $optDoc = parser.parse(g.optDoc, ``);
+            $optDoc.longDesc("FOO");
+            assert.equal(`/**
+ * TODO
+ *
+ * FOO
+ */
+`, $optDoc.text());
+        });
+        it("set", () => {
+            const $optDoc = parser.parse(g.optDoc, `/** Foo Bar */`);
+            $optDoc.longDesc("FOO");
+            assert.equal(`/**
+ * Foo Bar
+ *
  * FOO
  */`, $optDoc.text());
         });
