@@ -20,7 +20,7 @@ module.exports = function (g) {
     g.docEndMarker = /^ ?\*\//;
     g.docEndMarker.default = " */";
 
-    g.phpDocType = [g.fqn];
+    g.phpDocType = [g.fqn, optional("[]")];
     g.phpDocType.tag = "type";
 
     g.phpDocVariable = [g.variable];
@@ -70,6 +70,30 @@ module.exports = function (g) {
 
     g.docAnnotationContainer = [/^ */, g.phpDocAnnotation];
     g.docAnnotationContainer.tag = "annotation";
+    g.docAnnotationContainer.buildNode = function (self) {
+        self.name = (name) => {
+            const $name = self.children[1].findOneByGrammar(g.phpDocAnnotationName);
+            const r = $name.text(name);
+            return (name === undefined ? r : self);
+        };
+        self.type = (type) => {
+            const $type = self.children[1].findOneByGrammar(g.phpDocType);
+            const r = $type.text(type);
+            return (type === undefined ? r : self);
+        };
+        self.variable = (variable) => {
+            const $variableIdent = self.children[1].findOneByGrammar(g.phpDocVariable).children[0].children[1];
+            const r = $variableIdent.text(variable);
+            return (variable === undefined ? r : self);
+        };
+        self.value = (value) => {
+            const $value = self.children[1].findOneByTag("value");
+            if (value === undefined) return $value.text().trim();
+            $value.text(" " + value.trim());
+            return self;
+        };
+    };
+
 
     g.docDesc = optional(g.docLineContent);
     g.docDesc.tag = "desc";
