@@ -34,7 +34,7 @@ module.exports = function (g) {
     g.phpDocReturnAnnotation = ["@return", /^ +/, g.phpDocType];
     g.phpDocParamAnnotation = ["@param", /^ +/, g.phpDocType, /^ +/, g.phpDocVariable];
 
-    g.docContentUntilNextAnnotationOrEnd = optmul([
+    g.docContentUntilNextAnnotationOrEnd = multiple([
         not(or(g.docEndMarker, /^ *@/)),
         or(g.docLineStartBlock, g.docLineContent)
     ]);
@@ -95,10 +95,10 @@ module.exports = function (g) {
     };
 
 
-    g.docDesc = optional(g.docLineContent);
+    g.docDesc = optional([not(/^ *@/), g.docLineContent]);
     g.docDesc.tag = "desc";
 
-    g.docLongDesc = [not(/^ *@/), g.docContentUntilNextAnnotationOrEnd];
+    g.docLongDesc = [g.docContentUntilNextAnnotationOrEnd];
     g.docLongDesc.tag = "longDesc";
 
     g.oneLineDoc = [
@@ -108,10 +108,16 @@ module.exports = function (g) {
     ];
     g.oneLineDoc.tag = "oneLineDoc";
 
+    g.optDescBlock = optional([g.docLineStartBlock, g.docDesc]);
+    g.optDescBlock.tag = "db";
+
+    g.optLongDescBlock = optional([g.docLineStartBlock, g.docLongDesc]);
+    g.optLongDescBlock.tag = "ldb";
+
     g.multiLineDoc = [
         g.docStartMarker,
-        multiple(g.docLineStartBlock), g.docDesc,
-        optional([g.docLineStartBlock, g.docLongDesc]),
+        g.optDescBlock,
+        g.optLongDescBlock,
         optmul([g.docLineStartBlock, g.docAnnotationContainer]),
         g.docNl, g.docIndent, g.docEndMarker,
     ];
@@ -134,15 +140,28 @@ module.exports = function (g) {
         };
 
         self.desc = (desc) => {
-            if (desc === undefined) return self.findOneByGrammar(g.docDesc).text().trim();
+            let $docDesc = self.findOneByGrammar(g.docDesc);
+            if (desc === undefined) return $docDesc ? $docDesc.text().trim() : null;
             self.convertToMultiline();
-            self.findOneByGrammar(g.docDesc).text(" " + desc + (self.children[0].grammar === g.oneLineDoc ? " " : ""));
+            if (desc === null) {
+                // Remove
+                console.log(self.xml());
+                if ($docDesc) $docDesc.parent.parent.empty();
+            } else if (!$docDesc) {
+                // Create
+                self.text(`${desc} `);
+            } else {
+                // Update
+                $docDesc.text(desc);
+            }
+
+            // self.findOneByGrammar(g.docDesc).text(" " + desc + (self.children[0].grammar === g.oneLineDoc ? " " : ""));
             return self;
         };
 
         self.longDesc = (longDesc) => {
             let $docLongDesc = self.findOneByGrammar(g.docLongDesc);
-            if (longDesc === undefined) return $docLongDesc ? $docLongDesc.children[1].textWithoutLineStarts().trim() : null;
+            if (longDesc === undefined) return $docLongDesc ? $docLongDesc.children[0].textWithoutLineStarts().trim() : null;
             self.convertToMultiline();
 
             const $optLongDescContainer = self.children[0].children[3];
@@ -155,11 +174,13 @@ module.exports = function (g) {
                     $docLongDesc = $optLongDescContainer.children[0].children[1];
                 }
 
-                $docLongDesc.children[1].textWithoutLineStarts("\n" + longDesc);
+                $docLongDesc.children[0].textWithoutLineStarts("\n" + longDesc);
             }
 
             return self;
         };
+
+        self.getAnnotations = () => self.findByGrammar(g.docAnnotationContainer);
     };
 
     g.optDoc = optional([g.doc, g.ow]);
