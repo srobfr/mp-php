@@ -61,14 +61,12 @@ module.exports = function (g) {
     ];
     g.phpDocOtherAnnotation.tag = "phpDocOtherAnnotation";
 
-    g.phpDocAnnotation = or(
+    g.docAnnotationContainer = [/^ */, or(
         g.phpDocVarAnnotation,
         g.phpDocReturnAnnotation,
         g.phpDocParamAnnotation,
         g.phpDocOtherAnnotation
-    );
-
-    g.docAnnotationContainer = [/^ */, g.phpDocAnnotation];
+    )];
     g.docAnnotationContainer.tag = "annotation";
     g.docAnnotationContainer.buildNode = function (self) {
         self.name = (name) => {
@@ -110,6 +108,22 @@ module.exports = function (g) {
 
     g.optDescBlock = optional([g.docLineStartBlock, g.docDesc]);
     g.optDescBlock.tag = "db";
+    g.optDescBlock.buildNode = function(self) {
+        self.desc = (desc) => {
+            const $docDesc = self.findOneByGrammar(g.docDesc);
+            if (desc === undefined) return $docDesc ? $docDesc.desc() : null;
+            if (desc === null) {
+                if ($docDesc) self.empty();
+            } else if (!$docDesc) {
+                self.text(`\n * ${desc}`);
+            } else {
+                // Update
+                $docDesc.desc(desc);
+            }
+
+            return self;
+        };
+    };
 
     g.optLongDescBlock = optional([g.docLineStartBlock, g.docLongDesc]);
     g.optLongDescBlock.tag = "ldb";
@@ -140,23 +154,9 @@ module.exports = function (g) {
         };
 
         self.desc = (desc) => {
-            let $docDesc = self.findOneByGrammar(g.docDesc);
-            if (desc === undefined) return $docDesc ? $docDesc.text().trim() : null;
-            self.convertToMultiline();
-            if (desc === null) {
-                // Remove
-                console.log(self.xml());
-                if ($docDesc) $docDesc.parent.parent.empty();
-            } else if (!$docDesc) {
-                // Create
-                self.text(`${desc} `);
-            } else {
-                // Update
-                $docDesc.text(desc);
-            }
-
-            // self.findOneByGrammar(g.docDesc).text(" " + desc + (self.children[0].grammar === g.oneLineDoc ? " " : ""));
-            return self;
+            const $optDescBlock = self.findOneByGrammar(g.optDescBlock);
+            const r = $optDescBlock.desc(desc);
+            return (desc === undefined ? r : self);
         };
 
         self.longDesc = (longDesc) => {
