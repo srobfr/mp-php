@@ -2,232 +2,169 @@ const _ = require("lodash");
 const {multiple, not, optional, optmul, or} = require("microparser").grammarHelpers;
 
 module.exports = function (g) {
-    g.docStartMarker = /^\/\*\* */;
-    g.docStartMarker.default = "/**";
+    // docStartMarker
+    g.docStartMarker = "/**";
 
-    g.docNl = /^[\r\n]/;
+    // docNl
+    g.docNl = /^[ \t]*[\r\n]/;
     g.docNl.default = "\n";
 
-    g.docIndent = /^[ \t]*(?= ?\*)/;
+    // docIndent
+    g.docIndent = or(/^[ \t]*(?= \*)/, /^[ \t]*/);
     g.docIndent.default = "";
 
+    // docLineMarker
     g.docLineMarker = /^ ?\*(?!\/)/;
     g.docLineMarker.default = " *";
 
-    g.docLineStartBlock = [g.docNl, g.docIndent, g.docLineMarker];
+    // docLineStartBlock
+    g.docLineStartBlock = multiple([g.docNl, g.docIndent, g.docLineMarker]);
+    g.docLineStartBlock.tag = "docLineStartBlock";
 
+    // docSeparator
+    g.docSeparator = optional([g.docLineStartBlock]);
+    g.docSeparator.tag = "docSeparator";
+
+    // docLineContent
     g.docLineContent = /^(.(?!(?:\n|\r|\*\/)))*./; // Everything up to \n, \r ou "*/"
+
+    // docEndMarker
     g.docEndMarker = /^ ?\*\//;
     g.docEndMarker.default = " */";
 
-    g.phpDocType = [g.fqn, optional("[]")];
-    g.phpDocType.tag = "type";
-
-    g.phpDocVariable = [g.variable];
-    g.phpDocVariable.tag = "variable";
-
-    g.phpDocAnnotationName = [g.fqn];
-    g.phpDocAnnotationName.tag = "name";
-    g.phpDocAnnotationIdent = ["@", g.phpDocAnnotationName];
-
-    g.phpDocVarAnnotation = ["@var", /^ +/, g.phpDocType];
-    g.phpDocReturnAnnotation = ["@return", /^ +/, g.phpDocType];
-    g.phpDocParamAnnotation = ["@param", /^ +/, g.phpDocType, /^ +/, g.phpDocVariable];
-
+    // docContentUntilNextAnnotationOrEnd
     g.docContentUntilNextAnnotationOrEnd = multiple([
+        optmul(g.docLineStartBlock),
         not(or(g.docEndMarker, /^ *@/)),
-        or(g.docLineStartBlock, g.docLineContent)
+        g.docLineContent,
     ]);
     g.docContentUntilNextAnnotationOrEnd.buildNode = function (self) {
         self.textWithoutLineStarts = function (text) {
             if (text === undefined) return self.text().replace(/\n[ \t]*\*(?!\/) ?/g, "\n");
-
-            const newText = text.split(/\n/).map(l => {
-                const lTrim = l.replace(/[ \t]+$/, "");
-                return (lTrim === "" ? "" : " " + lTrim);
-            }).join(`\n *`);
-
+            const newText = text.split(/\n/).map(l => (l.trim() === "" ? "" : " " + l)).join(`\n *`);
             self.text(newText);
             return self;
         };
     };
 
-    g.phpDocOtherAnnotationValue = [g.docContentUntilNextAnnotationOrEnd];
-    g.phpDocOtherAnnotationValue.tag = "value";
+    // docEndBlock
+    g.docEndBlock = [optional(g.docLineStartBlock), g.docNl, g.docIndent, g.docEndMarker];
+    g.docEndBlock.tag = "docEndBlock";
 
-    g.phpDocOtherAnnotation = [
-        g.phpDocAnnotationIdent,
-        g.phpDocOtherAnnotationValue
-    ];
-    g.phpDocOtherAnnotation.tag = "phpDocOtherAnnotation";
-
-    g.docAnnotationContainer = [/^ */, or(
-        g.phpDocVarAnnotation,
-        g.phpDocReturnAnnotation,
-        g.phpDocParamAnnotation,
-        g.phpDocOtherAnnotation
-    )];
-    g.docAnnotationContainer.tag = "annotation";
-    g.docAnnotationContainer.buildNode = function (self) {
-        self.name = (name) => {
-            const $name = self.children[1].findOneByGrammar(g.phpDocAnnotationName);
-            const r = $name.text(name);
-            return (name === undefined ? r : self);
-        };
-        self.type = (type) => {
-            const $type = self.children[1].findOneByGrammar(g.phpDocType);
-            const r = $type.text(type);
-            return (type === undefined ? r : self);
-        };
-        self.variable = (variable) => {
-            const $variableIdent = self.children[1].findOneByGrammar(g.phpDocVariable).children[0].children[1];
-            const r = $variableIdent.text(variable);
-            return (variable === undefined ? r : self);
-        };
-        self.value = (value) => {
-            const $value = self.children[1].findOneByTag("value");
-            if (value === undefined) return $value.text().trim();
-            $value.text(" " + value.trim());
+    // docDesc
+    g.docDesc = [not(/^ *@/), g.docLineContent];
+    g.docDesc.tag = "docDesc";
+    g.docDesc.buildNode = function (self) {
+        self.desc = (desc) => {
+            const $docLineContent = self.children[1];
+            if (desc === undefined) return $docLineContent.text().trim();
+            $docLineContent.text(" " + desc.trim());
             return self;
         };
     };
 
-
-    g.docDesc = optional([not(/^ *@/), g.docLineContent]);
-    g.docDesc.tag = "desc";
-
-    g.docLongDesc = [g.docContentUntilNextAnnotationOrEnd];
-    g.docLongDesc.tag = "longDesc";
-
-    g.oneLineDoc = [
-        g.docStartMarker,
-        or(g.docAnnotationContainer, g.docDesc),
-        g.docEndMarker,
-    ];
-    g.oneLineDoc.tag = "oneLineDoc";
-
-    g.optDescBlock = optional([g.docLineStartBlock, g.docDesc]);
-    g.optDescBlock.tag = "db";
-    g.optDescBlock.buildNode = function(self) {
+    // docOptDescBlock
+    g.docOptDescBlock = optional([g.docSeparator, g.docDesc]);
+    g.docOptDescBlock.buildNode = function (self) {
         self.desc = (desc) => {
-            const $docDesc = self.findOneByGrammar(g.docDesc);
-            if (desc === undefined) return $docDesc ? $docDesc.desc() : null;
+            let $docDescBlock = self.children[0];
+            if (desc === undefined) return $docDescBlock ? $docDescBlock.findOneByGrammar(g.docDesc).desc() : null;
             if (desc === null) {
-                if ($docDesc) self.empty();
-            } else if (!$docDesc) {
-                self.text(`\n * ${desc}`);
+                if ($docDescBlock) self.empty();
             } else {
-                // Update
-                $docDesc.desc(desc);
+                if (!$docDescBlock) {
+                    self.text(`\n * TODO`);
+                    $docDescBlock = self.children[0];
+                }
+
+                $docDescBlock.findOneByGrammar(g.docDesc).desc(desc);
             }
 
             return self;
         };
     };
 
-    g.optLongDescBlock = optional([g.docLineStartBlock, g.docLongDesc]);
-    g.optLongDescBlock.tag = "ldb";
+    // docLongDesc
+    g.docLongDesc = [not(/^ *@/), g.docContentUntilNextAnnotationOrEnd];
+    g.docLongDesc.tag = "docLongDesc";
+    g.docLongDesc.buildNode = function (self) {
+        self.longDesc = (longDesc) => {
+            const $docContentUntilNextAnnotationOrEnd = self.children[1];
+            if (longDesc === undefined) return $docContentUntilNextAnnotationOrEnd.textWithoutLineStarts().trim();
+            $docContentUntilNextAnnotationOrEnd.textWithoutLineStarts(longDesc);
+            return self;
+        };
+    };
 
-    g.multiLineDoc = [
+    // docOptLongDescBlock
+    g.docOptLongDescBlock = optional([g.docSeparator, g.docLongDesc]);
+    g.docOptLongDescBlock.buildNode = function (self) {
+        self.longDesc = (longDesc) => {
+            let $docLongDescBlock = self.children[0];
+            if (longDesc === undefined) return $docLongDescBlock ? $docLongDescBlock.findOneByGrammar(g.docLongDesc).longDesc() : null;
+            if (longDesc === null) {
+                if ($docLongDescBlock) self.empty();
+            } else {
+                if (!$docLongDescBlock) {
+                    self.text(`\n *\n * TODO`);
+                    $docLongDescBlock = self.children[0];
+                }
+
+                $docLongDescBlock.findOneByGrammar(g.docLongDesc).longDesc(longDesc);
+            }
+
+            return self;
+        };
+    };
+
+    // doc
+    g.doc = [
         g.docStartMarker,
-        g.optDescBlock,
-        g.optLongDescBlock,
-        optmul([g.docLineStartBlock, g.docAnnotationContainer]),
-        g.docNl, g.docIndent, g.docEndMarker,
+        g.docOptDescBlock,
+        g.docOptLongDescBlock,
+        g.docEndBlock
     ];
-    g.multiLineDoc.tag = "multiLineDoc";
-
-    g.doc = or(g.oneLineDoc, g.multiLineDoc);
     g.doc.buildNode = function (self) {
-        self.convertToMultiline = function () {
-            if (self.children[0].grammar === g.multiLineDoc) return self;
+        /**
+         * Find the next non-empty node, and fix its separator block
+         * @param $node
+         */
+        function fixFirstNonEmptyNodeSeparator($node) {
+            const isRemoving = ($node.children.length === 0);
+            let $next = $node.next;
+            while ($next.children.length === 0) $next = $next.next;
+            if ($next.grammar === g.docEndBlock) {
+                if (isRemoving && $node.grammar === g.docOptDescBlock) $next.text(`\n *\n */`); // We are removing the first block.
+                else $next.text(`\n */`);
+            } else {
+                const $docLineStartBlock = $next.findOneByGrammar(g.docLineStartBlock);
+                if (isRemoving) $docLineStartBlock.empty();
+                else $docLineStartBlock.text(`\n *`);
+            }
+        }
 
-            const $oneLineDoc = self.children[0];
-            const $multiLineDoc = self.parser.parse(g.multiLineDoc);
-            const $oldContent = $oneLineDoc.children[1].children[0];
-            $oldContent.text(" " + $oldContent.text().trim());
-            if ($oldContent.grammar === g.docDesc) $multiLineDoc.children[2].replaceWith($oldContent);
-            else $multiLineDoc.children[4].text(`\n *${$oldContent.text()}`);
-
-            self.children[0] = $multiLineDoc;
+        self.desc = function (desc) {
+            const $docOptDescBlock = self.children[1];
+            if (desc === undefined) return $docOptDescBlock.desc();
+            $docOptDescBlock.desc(desc);
+            fixFirstNonEmptyNodeSeparator($docOptDescBlock);
+            return self;
+        };
+        
+        self.longDesc = function (longDesc) {
+            const $docOptLongDescBlock = self.children[2];
+            if (longDesc === undefined) return $docOptLongDescBlock.longDesc();
+            $docOptLongDescBlock.longDesc(longDesc);
+            fixFirstNonEmptyNodeSeparator($docOptLongDescBlock);
             return self;
         };
 
-        self.desc = (desc) => {
-            const $optDescBlock = self.findOneByGrammar(g.optDescBlock);
-            const r = $optDescBlock.desc(desc);
-            return (desc === undefined ? r : self);
-        };
-
-        self.longDesc = (longDesc) => {
-            let $docLongDesc = self.findOneByGrammar(g.docLongDesc);
-            if (longDesc === undefined) return $docLongDesc ? $docLongDesc.children[0].textWithoutLineStarts().trim() : null;
-            self.convertToMultiline();
-
-            const $optLongDescContainer = self.children[0].children[3];
-            if (longDesc === null) {
-                // Remove
-                if ($docLongDesc) $optLongDescContainer.empty();
-            } else {
-                if (!$docLongDesc) {
-                    $optLongDescContainer.text("\n *\n *\n *TODO");
-                    $docLongDesc = $optLongDescContainer.children[0].children[1];
-                }
-
-                $docLongDesc.children[0].textWithoutLineStarts("\n" + longDesc);
+        self.indent = function (indent) {
+            if (indent === undefined) {
+                const $firstIndent = self.findOneByGrammar(g.docIndent);
+                return $firstIndent ? $firstIndent.text() : null;
             }
-
-            return self;
-        };
-
-        self.getAnnotations = () => self.findByGrammar(g.docAnnotationContainer);
-    };
-
-    g.optDoc = optional([g.doc, g.ow]);
-    g.optDoc.buildNode = function (self) {
-        self.desc = (desc) => {
-            let $doc = self.children.length === 0 ? null : self.children[0].children[0];
-            if (desc === undefined) return $doc ? $doc.desc() : null;
-            if (desc === null) {
-                // Remove
-                if ($doc) $doc.desc(desc);
-            } else {
-                if (!$doc) {
-                    // Create
-                    self.text(`/**
- * ${desc}
- */
-`);
-                } else {
-                    // Update
-                    $doc.desc(desc);
-                }
-            }
-
-            return self;
-        };
-
-        self.longDesc = (longDesc) => {
-            let $doc = self.children.length === 0 ? null : self.children[0].children[0];
-            if (longDesc === undefined) return $doc ? $doc.longDesc() : null;
-            if (longDesc === null) {
-                // Remove
-                if ($doc) $doc.longDesc(longDesc);
-            } else {
-                if (!$doc) {
-                    // Create
-                    self.text(`/**
- * TODO
- *
- * ${longDesc}
- */
-`);
-                } else {
-                    // Update
-                    $doc.longDesc(longDesc);
-                }
-            }
-
+            _.each(self.findByGrammar(g.docIndent), ($docIndent => $docIndent.text(indent)));
             return self;
         };
     };
