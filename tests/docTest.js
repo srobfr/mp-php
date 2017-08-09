@@ -47,6 +47,46 @@ describe('docContentUntilNextAnnotationOrEnd', function () {
     });
 });
 
+describe('docAnnotationName', function () {
+    describe('name', function () {
+        it("get", function () {
+            const $docAnnotationName = parser.parse(g.docAnnotationName, `@foo`);
+            assert.equal($docAnnotationName.name(), "foo");
+        });
+        it("set", function () {
+            const $docAnnotationName = parser.parse(g.docAnnotationName, `@foo`);
+            $docAnnotationName.name("bar");
+            assert.equal($docAnnotationName.text(), "@bar");
+        });
+    });
+});
+
+describe('docAnnotation', function () {
+    it("pass", function () {
+        parser.parse(g.docAnnotation, `@foo Test`);
+        parser.parse(g.docAnnotation, `@foo(bar)`);
+        parser.parse(g.docAnnotation, `@foo\n * Plop`);
+        parser.parse(g.docAnnotation, `@foo Test\n * Plop`);
+    });
+    it("fail", function () {
+        assert.throws(() => parser.parse(g.docAnnotation, ``));
+        assert.throws(() => parser.parse(g.docAnnotation, `Foo`));
+        assert.throws(() => parser.parse(g.docAnnotation, `@Foo\nplop`));
+    });
+});
+
+describe('docAnnotations', function () {
+    it("pass", function () {
+        parser.parse(g.docAnnotations, ``);
+        parser.parse(g.docAnnotations, `@foo`);
+        parser.parse(g.docAnnotations, `\n *\n * @foo Test`);
+        parser.parse(g.docAnnotations, `\n *\n * @foo Test\n *\n * @plop`);
+    });
+    it("fail", function () {
+        assert.throws(() => parser.parse(g.docAnnotations, `foo`));
+    });
+});
+
 describe('doc', function () {
     describe('indent', function () {
         it("get empty", function () {

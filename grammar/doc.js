@@ -22,7 +22,7 @@ module.exports = function (g) {
     g.docLineStartBlock.tag = "docLineStartBlock";
 
     // docSeparator
-    g.docSeparator = optional([g.docLineStartBlock]);
+    g.docSeparator = optional(g.docLineStartBlock);
     g.docSeparator.tag = "docSeparator";
 
     // docLineContent
@@ -117,11 +117,53 @@ module.exports = function (g) {
         };
     };
 
+    // docAnnotationName
+    g.docAnnotationName = ["@", g.fqn];
+    g.docAnnotationName.tag = "name";
+    g.docAnnotationName.buildNode = function (self) {
+        self.name = function(name) {
+            const $fqn = self.children[1];
+            const r = $fqn.text(name);
+            return (name === undefined ? r : self);
+        };
+    };
+
+    // docAnnotationValue
+    g.docAnnotationValue = optional(g.docContentUntilNextAnnotationOrEnd);
+    g.docAnnotationValue.tag = "value";
+    g.docAnnotationValue.buildNode = function (self) {
+        self.value = function(value) {
+            let $docAnnotationValue = self.children[0];
+            if (value === undefined) return $docAnnotationValue ? $docAnnotationValue.textWithoutLineStarts() : null;
+            if (value === null) {
+                if ($docAnnotationValue) self.empty();
+            } else {
+                if (!$docAnnotationValue) {
+                    self.text(` TODO`);
+                    $docAnnotationValue = self.children[0];
+                }
+
+                $docAnnotationValue.textWithoutLineStarts(value);
+            }
+
+            return self;
+        };
+    };
+    // docAnnotation
+    g.docAnnotation = [/^ */, g.docAnnotationName, g.docAnnotationValue];
+
+    // docAnnotationBlock
+    g.docAnnotationBlock = [g.docSeparator, g.docAnnotation];
+
+    // docAnnotations
+    g.docAnnotations = optmul(g.docAnnotationBlock);
+
     // doc
     g.doc = [
         g.docStartMarker,
         g.docOptDescBlock,
         g.docOptLongDescBlock,
+        g.docAnnotations,
         g.docEndBlock
     ];
     g.doc.buildNode = function (self) {
