@@ -41,7 +41,9 @@ module.exports = function (g) {
     g.docContentUntilNextAnnotationOrEnd.buildNode = function (self) {
         self.textWithoutLineStarts = function (text) {
             if (text === undefined) return self.text().replace(/\n[ \t]*\*(?!\/) ?/g, "\n");
-            const newText = text.split(/\n/).map(l => (l.trim() === "" ? "" : " " + l)).join(`\n *`);
+            const newText = text.split(/\n/)
+                .map((l, i) => (l.trim() === "" ? "" : (i === 0 ? "" : " ") + l))
+                .join(`\n *`);
             self.text(newText);
             return self;
         };
@@ -91,7 +93,7 @@ module.exports = function (g) {
         self.longDesc = (longDesc) => {
             const $docContentUntilNextAnnotationOrEnd = self.children[1];
             if (longDesc === undefined) return $docContentUntilNextAnnotationOrEnd.textWithoutLineStarts().trim();
-            $docContentUntilNextAnnotationOrEnd.textWithoutLineStarts(longDesc);
+            $docContentUntilNextAnnotationOrEnd.textWithoutLineStarts(" " + longDesc.trim());
             return self;
         };
     };
@@ -121,7 +123,7 @@ module.exports = function (g) {
     g.docAnnotationName = ["@", g.fqn];
     g.docAnnotationName.tag = "name";
     g.docAnnotationName.buildNode = function (self) {
-        self.name = function(name) {
+        self.name = function (name) {
             const $fqn = self.children[1];
             const r = $fqn.text(name);
             return (name === undefined ? r : self);
@@ -132,7 +134,7 @@ module.exports = function (g) {
     g.docAnnotationValue = optional(g.docContentUntilNextAnnotationOrEnd);
     g.docAnnotationValue.tag = "value";
     g.docAnnotationValue.buildNode = function (self) {
-        self.value = function(value) {
+        self.value = function (value) {
             let $docAnnotationValue = self.children[0];
             if (value === undefined) return $docAnnotationValue ? $docAnnotationValue.textWithoutLineStarts() : null;
             if (value === null) {
@@ -143,6 +145,7 @@ module.exports = function (g) {
                     $docAnnotationValue = self.children[0];
                 }
 
+                value = (value[0] === " " ? value : " " + value);
                 $docAnnotationValue.textWithoutLineStarts(value);
             }
 
@@ -151,12 +154,57 @@ module.exports = function (g) {
     };
     // docAnnotation
     g.docAnnotation = [/^ */, g.docAnnotationName, g.docAnnotationValue];
+    g.docAnnotation.default = "@todo";
+    g.docAnnotation.buildNode = function (self) {
+        self.name = (name => {
+            const r = self.children[1].name(name);
+            return (name === undefined ? r : self);
+        });
+
+        self.value = (value => {
+            const r = self.children[2].value(value);
+            return (value === undefined ? r : self);
+        });
+    };
 
     // docAnnotationBlock
     g.docAnnotationBlock = [g.docSeparator, g.docAnnotation];
 
     // docAnnotations
     g.docAnnotations = optmul(g.docAnnotationBlock);
+    g.docAnnotations.order = [($node => $node.findOneByGrammar(g.docAnnotation).text().trim())];
+    g.docAnnotations.buildNode = function (self) {
+        self.getAnnotations = () => self.findByGrammar(g.docAnnotation);
+        self.findAnnotationsByName = (name) => self.getAnnotations().filter(($docAnnotation) => $docAnnotation.name() === name);
+        self.insertAnnotation = function ($docAnnotation, $previousNode) {
+            // Wrap in a docAnnotationBlock
+            const $docAnnotationBlock = self.parser.parse(g.docAnnotationBlock);
+            $docAnnotationBlock.children[1].replaceWith($docAnnotation);
+            self.insert($docAnnotationBlock, $previousNode);
+
+            // Fix separators
+            if ($docAnnotationBlock.prev && $docAnnotationBlock.prev.children[1].name() === $docAnnotation.name()) $docAnnotationBlock.children[0].text("\n *");
+            else $docAnnotationBlock.children[0].text("\n *\n *");
+            if ($docAnnotationBlock.next) {
+                const name = $docAnnotationBlock.next.children[1].name();
+                $docAnnotationBlock.next.children[0].text(name === $docAnnotation.name() ? "\n *" : "\n *\n *");
+            }
+
+            return self;
+        };
+        self.removeAnnotation = function ($docAnnotation) {
+            const $docAnnotationBlock = $docAnnotation.parent;
+            $docAnnotationBlock.remove();
+
+            // Fix separators
+            if ($docAnnotationBlock.next) {
+                const name = $docAnnotationBlock.next.children[1].name();
+                $docAnnotationBlock.next.children[0].text(name === ($docAnnotationBlock.prev ? $docAnnotationBlock.prev.children[1].name() : null) ? "\n *" : "\n *\n *");
+            }
+
+            return self;
+        };
+    };
 
     // doc
     g.doc = [
@@ -192,7 +240,7 @@ module.exports = function (g) {
             fixFirstNonEmptyNodeSeparator($docOptDescBlock);
             return self;
         };
-        
+
         self.longDesc = function (longDesc) {
             const $docOptLongDescBlock = self.children[2];
             if (longDesc === undefined) return $docOptLongDescBlock.longDesc();
@@ -207,6 +255,21 @@ module.exports = function (g) {
                 return $firstIndent ? $firstIndent.text() : null;
             }
             _.each(self.findByGrammar(g.docIndent), ($docIndent => $docIndent.text(indent)));
+            return self;
+        };
+
+        self.getAnnotations = () => self.children[3].getAnnotations();
+        self.findAnnotationsByName = (name) => self.children[3].findAnnotationsByName(name);
+        self.insertAnnotation = function ($docAnnotation, $previousNode) {
+            const $docAnnotations = self.children[3];
+            $docAnnotations.insertAnnotation($docAnnotation, $previousNode);
+            fixFirstNonEmptyNodeSeparator($docAnnotations);
+            return self;
+        };
+        self.removeAnnotation = function ($docAnnotation) {
+            const $docAnnotations = self.children[3];
+            $docAnnotations.removeAnnotation($docAnnotation);
+            fixFirstNonEmptyNodeSeparator($docAnnotations);
             return self;
         };
     };

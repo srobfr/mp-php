@@ -43,7 +43,7 @@ describe('docContentUntilNextAnnotationOrEnd', function () {
     it("set textWithoutLineStarts", function () {
         const $ = parser.parse(g.docContentUntilNextAnnotationOrEnd, `TODO`);
         $.textWithoutLineStarts("Foo\nBar\n\nPlop");
-        assert.equal($.text(), ` Foo\n * Bar\n *\n * Plop`);
+        assert.equal($.text(), `Foo\n * Bar\n *\n * Plop`);
     });
 });
 
@@ -73,6 +73,35 @@ describe('docAnnotation', function () {
         assert.throws(() => parser.parse(g.docAnnotation, `Foo`));
         assert.throws(() => parser.parse(g.docAnnotation, `@Foo\nplop`));
     });
+
+    describe('name', function () {
+        it("get", function () {
+            const $annotation = parser.parse(g.docAnnotation, `@foo Test`);
+            assert.equal($annotation.name(), "foo");
+        });
+        it("set", function () {
+            const $annotation = parser.parse(g.docAnnotation, `@foo Test`);
+            $annotation.name("plop");
+            assert.equal($annotation.text(), `@plop Test`);
+        });
+    });
+
+    describe('value', function () {
+        it("get", function () {
+            const $annotation = parser.parse(g.docAnnotation, `@foo Test\n      *   Bar`);
+            assert.equal($annotation.value(), " Test\n  Bar");
+        });
+        it("set 1", function () {
+            const $annotation = parser.parse(g.docAnnotation, `@foo Test`);
+            $annotation.value("Foo\n  Plop");
+            assert.equal($annotation.text(), `@foo Foo\n *   Plop`);
+        });
+        it("set 2", function () {
+            const $annotation = parser.parse(g.docAnnotation, `@foo Test`);
+            $annotation.value(" Foo\nPlop");
+            assert.equal($annotation.text(), `@foo Foo\n * Plop`);
+        });
+    });
 });
 
 describe('docAnnotations', function () {
@@ -84,6 +113,73 @@ describe('docAnnotations', function () {
     });
     it("fail", function () {
         assert.throws(() => parser.parse(g.docAnnotations, `foo`));
+    });
+
+    describe('docAnnotation', function () {
+        it("get all", function () {
+            const $docAnnotations = parser.parse(g.docAnnotations, `\n *\n * @foo Test\n *\n * @plop`);
+            const $docAnnotationList = $docAnnotations.getAnnotations();
+            assert.equal($docAnnotationList.length, 2);
+            assert.equal($docAnnotationList[0].name(), "foo");
+        });
+        it("find by name", function () {
+            const $docAnnotations = parser.parse(g.docAnnotations, `\n *\n * @foo Test\n *\n * @plop`);
+            const $docAnnotationList = $docAnnotations.findAnnotationsByName("foo");
+            assert.equal($docAnnotationList.length, 1);
+            assert.equal($docAnnotationList[0].name(), "foo");
+        });
+
+        it("insert at starting", function () {
+            const $docAnnotations = parser.parse(g.docAnnotations, `
+ * @foo Test
+ *
+ * @plop`);
+
+            const $docAnnotation = parser.parse(g.docAnnotation, ` @author Foo Bar`);
+            $docAnnotations.insertAnnotation($docAnnotation);
+            assert.equal($docAnnotations.text(), `
+ *
+ * @author Foo Bar
+ *
+ * @foo Test
+ *
+ * @plop`);
+        });
+
+        it("insert at end", function () {
+            const $docAnnotations = parser.parse(g.docAnnotations, `
+ *
+ * @foo Test
+ *
+ * @plop`);
+
+            const $docAnnotation = parser.parse(g.docAnnotation, ` @var Plop $plop`);
+            $docAnnotations.insertAnnotation($docAnnotation);
+            assert.equal($docAnnotations.text(), `
+ *
+ * @foo Test
+ *
+ * @plop
+ *
+ * @var Plop $plop`);
+        });
+        it("insert same name", function () {
+            const $docAnnotations = parser.parse(g.docAnnotations, `
+ *
+ * @foo Test
+ *
+ * @plop`);
+
+            $docAnnotations.insertAnnotation(parser.parse(g.docAnnotation, ` @foo plop`));
+            $docAnnotations.insertAnnotation(parser.parse(g.docAnnotation, ` @foo z!`));
+            assert.equal($docAnnotations.text(), `
+ *
+ * @foo plop
+ * @foo Test
+ * @foo z!
+ *
+ * @plop`);
+        });
     });
 });
 
@@ -241,6 +337,111 @@ describe('doc', function () {
             $doc.longDesc(null);
             assert.equal($doc.text(), `/**
  * Foo
+ */`);
+        });
+    });
+
+    describe('annotations', function () {
+        it("get all", function () {
+            const $doc = parser.parse(g.doc, `/**
+ * Foo
+ * @foo
+ * @bar
+ *
+ * @plop
+ */`);            const $docAnnotations = $doc.getAnnotations();
+            assert.equal($docAnnotations.length, 3);
+            assert.equal($docAnnotations[0].name(), "foo");
+        });
+        it("find by name", function () {
+            const $doc = parser.parse(g.doc, `/**
+ * Foo
+ * @foo
+ * @bar
+ *
+ * @plop
+ */`);
+            const $docAnnotations = $doc.findAnnotationsByName("bar");
+            assert.equal($docAnnotations.length, 1);
+            assert.equal($docAnnotations[0].name(), "bar");
+        });
+
+        it("insert at starting", function () {
+            const $doc = parser.parse(g.doc, `/**
+ * Foo
+ * @foo
+ * @bar
+ *
+ * @plop
+ */`);
+
+            const $docAnnotation = parser.parse(g.docAnnotation, ` @author Foo Bar`);
+            $doc.insertAnnotation($docAnnotation);
+            assert.equal($doc.text(), `/**
+ * Foo
+ *
+ * @author Foo Bar
+ *
+ * @foo
+ * @bar
+ *
+ * @plop
+ */`);
+        });
+
+        it("remove first", function () {
+            const $doc = parser.parse(g.doc, `/**
+ * Foo
+ * @foo
+ * @bar
+ *
+ * @plop
+ */`);
+
+            const $docAnnotation = $doc.findAnnotationsByName("foo");
+            $doc.removeAnnotation($docAnnotation[0]);
+            assert.equal($doc.text(), `/**
+ * Foo
+ *
+ * @bar
+ *
+ * @plop
+ */`);
+        });
+        it("remove", function () {
+            const $doc = parser.parse(g.doc, `/**
+ * Foo
+ * @foo
+ * @bar
+ *
+ * @plop
+ */`);
+
+            const $docAnnotation = $doc.findAnnotationsByName("bar");
+            $doc.removeAnnotation($docAnnotation[0]);
+            assert.equal($doc.text(), `/**
+ * Foo
+ * @foo
+ *
+ * @plop
+ */`);
+        });
+        it("remove last", function () {
+            const $doc = parser.parse(g.doc, `/**
+ * Foo
+ * @foo
+ * @bar
+ *
+ * @plop Plop
+ *       Test
+ */`);
+
+            const $docAnnotation = $doc.findAnnotationsByName("plop");
+            $doc.removeAnnotation($docAnnotation[0]);
+            assert.equal($doc.text(), `/**
+ * Foo
+ * @foo
+ * @bar
  */`);
         });
     });
