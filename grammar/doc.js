@@ -185,6 +185,7 @@ module.exports = function (g) {
             // Fix separators
             if ($docAnnotationBlock.prev && $docAnnotationBlock.prev.children[1].name() === $docAnnotation.name()) $docAnnotationBlock.children[0].text("\n *");
             else $docAnnotationBlock.children[0].text("\n *\n *");
+
             if ($docAnnotationBlock.next) {
                 const name = $docAnnotationBlock.next.children[1].name();
                 $docAnnotationBlock.next.children[0].text(name === $docAnnotation.name() ? "\n *" : "\n *\n *");
@@ -201,6 +202,31 @@ module.exports = function (g) {
                 const name = $docAnnotationBlock.next.children[1].name();
                 $docAnnotationBlock.next.children[0].text(name === ($docAnnotationBlock.prev ? $docAnnotationBlock.prev.children[1].name() : null) ? "\n *" : "\n *\n *");
             }
+
+            return self;
+        };
+    };
+
+    // docMonoline
+    g.docMonoline = [
+        g.docStartMarker,
+        or(g.docDesc, g.docAnnotation),
+        /^ */,
+        g.docEndMarker
+    ];
+    g.docMonoline.buildNode = function (self) {
+        self.desc = function (desc) {
+            let $docDesc = self.children[1].children[0];
+            if ($docDesc.grammar !== g.docDesc) {
+                if (desc === undefined) return null;
+                $docDesc = self.parser.parse(g.docDesc, "TODO");
+                self.children[1].children[0] = $docDesc;
+            } else if(desc === undefined) {
+                return $docDesc.desc(desc);
+            }
+
+            $docDesc.desc(desc);
+            self.children[2].text(" ");
 
             return self;
         };
@@ -263,6 +289,12 @@ module.exports = function (g) {
         self.insertAnnotation = function ($docAnnotation, $previousNode) {
             const $docAnnotations = self.children[3];
             $docAnnotations.insertAnnotation($docAnnotation, $previousNode);
+
+            if (self.children[1].children.length === 0 && self.children[2].children.length === 0) {
+                // No desc or longDesc
+                $docAnnotations.children[0].children[0].text("\n *");
+            }
+
             fixFirstNonEmptyNodeSeparator($docAnnotations);
             return self;
         };
@@ -270,6 +302,59 @@ module.exports = function (g) {
             const $docAnnotations = self.children[3];
             $docAnnotations.removeAnnotation($docAnnotation);
             fixFirstNonEmptyNodeSeparator($docAnnotations);
+            return self;
+        };
+    };
+
+    // optDoc
+    g.optDoc = optional([g.doc, g.ow]);
+    g.optDoc.buildNode = function (self) {
+        self.desc = function (desc) {
+            let $doc = (self.children[0] ? self.children[0].children[0] : null);
+            if (desc === undefined) return $doc ? $doc.desc() : null;
+            if (desc === null) {
+                if ($doc) $doc.desc(desc);
+            } else {
+                if (!$doc) {
+                    self.text(`/**\n *\n */\n`);
+                    $doc = self.children[0].children[0];
+                }
+
+                $doc.desc(desc);
+            }
+
+            return self;
+        };
+
+        self.longDesc = function (longDesc) {
+            let $doc = (self.children[0] ? self.children[0].children[0] : null);
+            if (longDesc === undefined) return $doc ? $doc.longDesc() : null;
+            if (longDesc === null) {
+                if ($doc) $doc.longDesc(longDesc);
+            } else {
+                if (!$doc) {
+                    self.text(`/**\n *\n */\n`);
+                    $doc = self.children[0].children[0];
+                }
+
+                $doc.longDesc(longDesc);
+            }
+
+            return self;
+        };
+
+        self.getAnnotations = function () {
+            if (!self.children[0]) return [];
+            return self.children[0].children[0].getAnnotations();
+        };
+
+        self.insertAnnotation = function ($docAnnotation, $previousNode) {
+            let $doc = (self.children[0] ? self.children[0].children[0] : null);
+            if (!$doc) {
+                self.text(`/**\n *\n */\n`);
+                $doc = self.children[0].children[0];
+            }
+            $doc.insertAnnotation($docAnnotation, $previousNode);
             return self;
         };
     };
