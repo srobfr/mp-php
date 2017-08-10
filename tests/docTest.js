@@ -101,6 +101,16 @@ describe('docAnnotation', function () {
             $annotation.value(" Foo\nPlop");
             assert.equal($annotation.text(), `@foo Foo\n * Plop`);
         });
+        it("set 3", function () {
+            const $annotation = parser.parse(g.docAnnotation, `@foo Test`);
+            $annotation.value(null);
+            assert.equal($annotation.text(), `@foo`);
+        });
+        it("set 4", function () {
+            const $annotation = parser.parse(g.docAnnotation, `@foo`);
+            $annotation.value(" Foo !");
+            assert.equal($annotation.text(), `@foo Foo !`);
+        });
     });
 });
 
@@ -340,6 +350,12 @@ describe('doc', function () {
  *
  */`);
         });
+
+        it("remove 2", function () {
+            const $doc = parser.parse(g.doc, `/**\n * Foo\n * @test\n */`);
+            $doc.desc(null);
+            assert.equal($doc.text(), `/**\n * @test\n */`);
+        });
     });
 
     describe('longDesc', function () {
@@ -539,6 +555,11 @@ describe('optDoc', function () {
             $optDoc.desc("Foo");
             assert.equal($optDoc.text(), `/**\n * Foo\n */\n`);
         });
+        it("set empty", function () {
+            const $optDoc = parser.parse(g.optDoc, `/**\n * Foo\n */\n`);
+            $optDoc.desc(null);
+            assert.equal($optDoc.text(), `/**\n *\n */\n`);
+        });
     });
 
     describe('longDesc', function () {
@@ -554,6 +575,11 @@ describe('optDoc', function () {
             const $optDoc = parser.parse(g.optDoc, ``);
             $optDoc.longDesc("Foo");
             assert.equal($optDoc.text(), `/**\n *\n * Foo\n */\n`);
+        });
+        it("set empty", function () {
+            const $optDoc = parser.parse(g.optDoc, `/**\n * Foo\n * Bar\n */\n`);
+            $optDoc.longDesc(null);
+            assert.equal($optDoc.text(), `/**\n * Foo\n */\n`);
         });
     });
 

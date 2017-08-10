@@ -259,8 +259,7 @@ module.exports = function (g) {
                 else $next.text(`\n */`);
             } else {
                 const $docLineStartBlock = $next.findOneByGrammar(g.docLineStartBlock);
-                if (isRemoving) $docLineStartBlock.empty();
-                else $docLineStartBlock.text(`\n *`);
+                $docLineStartBlock.text(`\n *`);
             }
         }
 
