@@ -9,18 +9,6 @@ module.exports = function (g) {
     g.wOrComments = multiple(or(g.w, g.commentLine, g.commentBlock));
     g.owOrComments = optional(g.wOrComments);
 
-    g.wDefaultOneSpace = [g.w];
-    g.wDefaultOneSpace.default = " ";
-
-    g.owDefaultOneSpace = [g.ow];
-    g.owDefaultOneSpace.default = " ";
-
-    g.owOrCommentsDefaultOneSpace = [g.owOrComments];
-    g.owOrCommentsDefaultOneSpace.default = " ";
-
-    g.owDefaultNextLine = [g.ow];
-    g.owDefaultNextLine.default = ($parent) => `\n${$parent.getIndent()}`;
-
     g.eof = /^$/;
     g.phpBlockStart = "<?php";
     g.phpBlockEnd = [g.ow, or("?>", g.eof)];

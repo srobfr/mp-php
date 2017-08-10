@@ -4,52 +4,17 @@ const {descHelper} = require(__dirname + "/../helpers.js");
 
 module.exports = function (g) {
     g.funcArgType = [optional("?"), g.fqn];
-    g.funcArgType.buildNode = function (self) {
-        function phpTypeToPhpDocType(phpType) {
-            const m = phpType.match(/^(\?)?(.+)$/);
-            if (!m) throw new Error(`Unable to convert PHP type "${phpType} to the equivalent PHP doc type.`);
-            return m[2] + (m[1] ? "|null" : "");
-        }
-        function phpDocTypeToPhpType(phpDocType) {
-            const types = phpDocType.split("|");
-            let isNullable = false;
-            let isArray = false;
-            let r = null;
-            types.forEach(type => {
-                let m;
-                if(type === "null") isNullable = true;
-                else if (m = type.match(/^(.+?)\[\]$/)) {
-                    r = m[1];
-                    isArray = true;
-                } else {
-                    r = type;
-                }
-            });
-
-            return r;
-        }
-
-        self.phpDocType = function (phpDocType) {
-            if (phpDocType === undefined) return phpTypeToPhpDocType(self.text());
-            self.text(phpDocTypeToPhpType(phpDocType));
-            return self;
-        };
-    };
-
-
     g.funcArg = [
         optional([g.funcArgType, g.w]),
         optional("&"),
         g.variable, optional(g.defaultValue)
     ];
 
-    g.funcArgs = optmul(g.funcArg, [g.ow, ",", g.ow]);
+    g.funcArgs = optmul(g.funcArg, [g.owOrComments, ",", g.owOrCommentsDefaultOneSpace]);
     g.funcArgs.order = [
-        ($node => $node.findOneByGrammar(g.defaultValue) ? 0 : 1),
-        ($node => $node.text()),
+        ($node) => $node.findOne(g.defaultValue) ? 0 : 1,
+        ($node) => $node.text(),
     ];
-
-    // TODO
 
     g._owDefaultNextLine = [g.ow];
     g._owDefaultNextLine.default = ($parent) => `\n${$parent.getIndent()}`;
