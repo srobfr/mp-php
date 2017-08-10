@@ -1,4 +1,4 @@
-# mp-php
+# mp-php [![Build Status](https://travis-ci.org/srobfr/mp-php.svg?branch=master)](https://travis-ci.org/srobfr/mp-php)
 
 Microparser profile for PHP.
 
