@@ -196,7 +196,7 @@ describe('docMonoline', function () {
     describe('desc', function () {
         it("get empty", function () {
             const $docMonoline = parser.parse(g.docMonoline, `/** */`);
-            assert.equal($docMonoline.desc(), "");
+            assert.equal($docMonoline.desc(), null);
         });
         it("get annotation", function () {
             const $docMonoline = parser.parse(g.docMonoline, `/** @foo */`);
@@ -228,11 +228,36 @@ describe('docMonoline', function () {
 describe('doc', function () {
     it("pass", function () {
         parser.parse(g.doc, `/** Foo */`);
-        parser.parse(g.doc, `/** \n *@foo */`);
-        parser.parse(g.doc, `/**\n\n * \n*/`);
+        parser.parse(g.doc, `/** \n *@foo\n*/`);
+        parser.parse(g.doc, `/**\n * \n*/`);
     });
+
     it("fail", function () {
         assert.throws(() => parser.parse(g.doc, ``));
+    });
+
+    describe('Convert to multiline', function () {
+        it("empty", function () {
+            const $doc = parser.parse(g.doc, `/** */`);
+            $doc.convertToMultilineDoc();
+            assert.equal($doc.text(), `/**
+ *
+ */`);
+        });
+        it("Desc", function () {
+            const $doc = parser.parse(g.doc, `/** Foo */`);
+            $doc.convertToMultilineDoc();
+            assert.equal($doc.text(), `/**
+ * Foo
+ */`);
+        });
+        it("Annotation", function () {
+            const $doc = parser.parse(g.doc, `/** @foo Test */`);
+            $doc.convertToMultilineDoc();
+            assert.equal($doc.text(), `/**
+ * @foo Test
+ */`);
+        });
     });
 
     describe('indent', function () {

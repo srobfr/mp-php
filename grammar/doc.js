@@ -59,7 +59,7 @@ module.exports = function (g) {
     g.docDesc.buildNode = function (self) {
         self.desc = (desc) => {
             const $docLineContent = self.children[1];
-            if (desc === undefined) return $docLineContent.text().trim();
+            if (desc === undefined) return $docLineContent.text().trim() || null;
             $docLineContent.text(" " + desc.trim());
             return self;
         };
@@ -221,7 +221,7 @@ module.exports = function (g) {
                 if (desc === undefined) return null;
                 $docDesc = self.parser.parse(g.docDesc, "TODO");
                 self.children[1].children[0] = $docDesc;
-            } else if(desc === undefined) {
+            } else if (desc === undefined) {
                 return $docDesc.desc(desc);
             }
 
@@ -230,17 +230,22 @@ module.exports = function (g) {
 
             return self;
         };
+        self.getAnnotations = function () {
+            let $docAnnotation = self.children[1].children[0];
+            if ($docAnnotation.grammar !== g.docAnnotation) return [];
+            return [$docAnnotation];
+        };
     };
 
-    // doc
-    g.doc = [
+    // docMultiline
+    g.docMultiline = [
         g.docStartMarker,
         g.docOptDescBlock,
         g.docOptLongDescBlock,
         g.docAnnotations,
         g.docEndBlock
     ];
-    g.doc.buildNode = function (self) {
+    g.docMultiline.buildNode = function (self) {
         /**
          * Find the next non-empty node, and fix its separator block
          * @param $node
@@ -304,6 +309,50 @@ module.exports = function (g) {
             fixFirstNonEmptyNodeSeparator($docAnnotations);
             return self;
         };
+    };
+
+    // doc
+    g.doc = or(g.docMonoline, g.docMultiline);
+    g.doc.buildNode = function (self) {
+        self.convertToMultilineDoc = function () {
+            if (self.children[0].grammar === g.docMonoline) {
+                const $docMultiline = self.parser.parse(g.docMultiline);
+                const $docMonoline = self.children[0];
+                $docMultiline.desc($docMonoline.desc());
+                const $annotations = $docMonoline.getAnnotations();
+                if ($annotations.length) {
+                    const $annotation = $annotations[0];
+                    $annotation.text(" " + $annotation.text().trim());
+                    $docMultiline.insertAnnotation($annotation);
+                }
+                $docMonoline.replaceWith($docMultiline);
+            }
+
+            return self;
+        };
+
+        self.desc = function (desc) {
+            if (desc === undefined) return self.children[0].desc();
+            self.children[0].desc(desc);
+            return self;
+        };
+
+        self.longDesc = function (longDesc) {
+            if (longDesc === undefined) return self.children[0].longDesc();
+            self.children[0].longDesc(longDesc);
+            return self;
+        };
+
+        self.indent = function (indent) {
+            if (indent === undefined) return self.children[0].indent();
+            self.children[0].indent(indent);
+            return self;
+        };
+
+        self.getAnnotations = () => self.children[0].getAnnotations();
+        self.findAnnotationsByName = (name) => self.children[0].findAnnotationsByName(name);
+        self.insertAnnotation = ($docAnnotation, $previousNode) => self.children[0].insertAnnotation($docAnnotation, $previousNode);
+        self.removeAnnotation = ($docAnnotation) => self.children[0].removeAnnotation($docAnnotation);
     };
 
     // optDoc
