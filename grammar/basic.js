@@ -25,7 +25,7 @@ module.exports = function (g) {
     // Fully Qualified Name
     g.fqn = [g.optFirstBackslash, multiple(g.ident, "\\")];
 
-    g.keywords = or("null", "true", "false", /^[A-Z_]+/);
+    g.keywords = or("null", "true", "false");
 
     // Parentheses block
     g.parBlock = [];
@@ -41,17 +41,44 @@ module.exports = function (g) {
 
     // PHP Variable
     g.variable = ["$", g.ident];
+    g.variable.buildNode = function (self) {
+        self.name = function (name) {
+            if (name === undefined) return self.children[1].text();
+            self.children[1].text(name);
+            return self;
+        };
+    };
 
     g.staticArray = or(
         ["array", g.ow, g.parBlock],
         g.bracketsBlock
     );
-    g.constRef = [g.fqn, "::", g.ident];
-    g.staticExpr = or(g.string, g.numeric, g.keywords, g.staticArray, g.constRef);
+    g.classConstRef = [g.fqn, "::", g.ident];
+    g.constRef = /^[A-Z_]+/;
+    g.staticExpr = or(g.string, g.numeric, g.keywords, g.constRef, g.staticArray, g.classConstRef);
 
     g.defaultValue = [g.ow, "=", g.ow, g.staticExpr];
     g.defaultValue.default = ` = null`;
+
     g.optDefaultValue = optional(g.defaultValue);
+    g.optDefaultValue.buildNode = function (self) {
+        self.value = function(value) {
+            let $defaultValue = self.children[0];
+            if (value === undefined) return $defaultValue ? $defaultValue.children[3].text() : null;
+            if (value === null) {
+                if ($defaultValue) self.empty();
+            } else {
+                if (!$defaultValue) {
+                    self.text(g.defaultValue.default);
+                    $defaultValue = self.children[0];
+                }
+
+                $defaultValue.children[3].text(value)
+            }
+
+            return self;
+        };
+    };
 
     g.private = "private";
     g.protected = "protected";

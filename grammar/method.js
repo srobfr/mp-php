@@ -26,6 +26,8 @@ module.exports = function (g) {
                 }
             });
 
+            if (isArray) r = "array";
+            if (isNullable) r = "?" + r;
             return r;
         }
 
@@ -34,25 +36,86 @@ module.exports = function (g) {
             self.text(phpDocTypeToPhpType(phpDocType));
             return self;
         };
+        self.type = function (type) {
+            if (type === undefined) return self.text();
+            self.text(type);
+            return self;
+        };
     };
 
+    g.optFuncArgType = optional([g.funcArgType, g.w]);
+    g.optFuncArgType.buildNode = function (self) {
+        self.type = function(type) {
+            let $funcArgType = self.children[0];
+            if (type === undefined) return $funcArgType ? $funcArgType.findOneByGrammar(g.funcArgType).type() : null;
+            if (type === null) {
+                if ($funcArgType) self.empty();
+            } else {
+                if (!$funcArgType) {
+                    self.text(`TODO `);
+                    $funcArgType = self.children[0];
+                }
+
+                $funcArgType.findOneByGrammar(g.funcArgType).type(type);
+            }
+
+            return self;
+        };
+    };
 
     g.funcArg = [
-        optional([g.funcArgType, g.w]),
+        g.optFuncArgType,
         optional("&"),
-        g.variable, optional(g.defaultValue)
+        g.variable,
+        g.optDefaultValue
     ];
+    g.funcArg.buildNode = function (self) {
+        self.name = function (name) {
+            const $variable = self.children[2];
+            if (name === undefined) return $variable.name();
+            $variable.name(name);
+            return self;
+        };
+        self.type = function (type) {
+            const $optFuncArgType = self.children[0];
+            if (type === undefined) return $optFuncArgType.type();
+            $optFuncArgType.type(type);
+            return self;
+        };
+        self.value = function (value) {
+            const $optDefaultValue = self.children[3];
+            if (value === undefined) return $optDefaultValue.value();
+            $optDefaultValue.value(value);
+            return self;
+        };
+        self.byReference = function (byReference) {
+            const $byReference = self.children[1];
+            if (byReference === undefined) return $byReference.children.length > 0;
+            $byReference.text(byReference ? "&" : "");
+            return self;
+        };
+    };
 
-    g.funcArgs = optmul(g.funcArg, [g.ow, ",", g.ow]);
+    g.funcArgsSeparator = [g.ow, ",", g.ow];
+    g.funcArgsSeparator.default = ", ";
+
+    g.funcArgs = optmul(g.funcArg, g.funcArgsSeparator);
     g.funcArgs.order = [
         ($node => $node.findOneByGrammar(g.defaultValue) ? 0 : 1),
         ($node => $node.text()),
     ];
-
-    // TODO
-
-    g._owDefaultNextLine = [g.ow];
-    g._owDefaultNextLine.default = ($parent) => `\n${$parent.getIndent()}`;
+    g.funcArgs.buildNode = function (self) {
+        self.getArgs = () => self.findByGrammar(g.funcArg);
+        self.findArgByName = (name) => self.getArgs().filter(($funcArg) => $funcArg.name() === name);
+        self.insertArg = function ($funcArg, $previousNode) {
+            self.insert($funcArg, $previousNode);
+            return self;
+        };
+        self.removeArg = function ($funcArg) {
+            $funcArg.removeWithSeparator();
+            return self;
+        };
+    };
 
     g.funcBody = [
         g.ow,

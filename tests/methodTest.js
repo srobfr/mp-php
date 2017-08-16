@@ -32,7 +32,7 @@ describe('funcArgType', function () {
         it("set 3", () => {
             const $funcArgType = parser.parse(g.funcArgType, `Foo`);
             $funcArgType.phpDocType("null|Bar");
-            assert.equal($funcArgType.text(), "Bar");
+            assert.equal($funcArgType.text(), "?Bar");
         });
         it("set 4", () => {
             const $funcArgType = parser.parse(g.funcArgType, `Foo`);
@@ -44,6 +44,141 @@ describe('funcArgType', function () {
             $funcArgType.phpDocType("Bar[]|null");
             assert.equal($funcArgType.text(), "?array");
         });
+    });
+});
+
+describe('funcArg', function () {
+    describe('name', function () {
+        it("get", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo $foo = 4`);
+            assert.equal($funcArg.name(), "foo");
+        });
+        it("set", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo   $foo = 4`);
+            $funcArg.name("bar");
+            assert.equal(`Foo   $bar = 4`, $funcArg.text());
+        });
+    });
+
+    describe('type', function () {
+        it("get", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo $foo = 4`);
+            assert.equal($funcArg.type(), "Foo");
+        });
+        it("get null", () => {
+            const $funcArg = parser.parse(g.funcArg, `$foo = 4`);
+            assert.equal($funcArg.type(), null);
+        });
+        it("set", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo   $foo = 4`);
+            $funcArg.type("Bar");
+            assert.equal(`Bar   $foo = 4`, $funcArg.text());
+        });
+        it("set from empty", () => {
+            const $funcArg = parser.parse(g.funcArg, `$foo = 4`);
+            $funcArg.type("Bar");
+            assert.equal(`Bar $foo = 4`, $funcArg.text());
+        });
+        it("remove", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo   $foo = 4`);
+            $funcArg.type(null);
+            assert.equal(`$foo = 4`, $funcArg.text());
+        });
+    });
+
+    describe('value', function () {
+        it("get", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo $foo = 4`);
+            assert.equal($funcArg.value(), "4");
+        });
+        it("get null", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo $foo`);
+            assert.equal($funcArg.value(), null);
+        });
+        it("set", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo   $foo = 4`);
+            $funcArg.value("BAR");
+            assert.equal(`Foo   $foo = BAR`, $funcArg.text());
+        });
+        it("set from empty", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo $foo`);
+            $funcArg.value("BAR");
+            assert.equal(`Foo $foo = BAR`, $funcArg.text());
+        });
+        it("remove", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo   $foo = 4`);
+            $funcArg.value(null);
+            assert.equal(`Foo   $foo`, $funcArg.text());
+        });
+    });
+    describe('byReference', function () {
+        it("get false", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo $foo = 4`);
+            assert.equal($funcArg.byReference(), false);
+        });
+        it("get true", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo &$foo = 4`);
+            assert.equal($funcArg.byReference(), true);
+        });
+        it("set", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo   $foo = 4`);
+            $funcArg.byReference(true);
+            assert.equal(`Foo   &$foo = 4`, $funcArg.text());
+        });
+        it("remove", () => {
+            const $funcArg = parser.parse(g.funcArg, `Foo   &$foo = 4`);
+            $funcArg.byReference(false);
+            assert.equal(`Foo   $foo = 4`, $funcArg.text());
+        });
+    });
+});
+
+describe('funcArgs', function () {
+    it("get all", function () {
+        const $funcArgs = parser.parse(g.funcArgs, `$foo, $bar`);
+        const $argsList = $funcArgs.getArgs();
+        assert.equal($argsList.length, 2);
+        assert.equal($argsList[0].name(), "foo");
+    });
+    it("find by name", function () {
+        const $funcArgs = parser.parse(g.funcArgs, `$foo, $bar`);
+        const $argsList = $funcArgs.findArgByName("bar");
+        assert.equal($argsList.length, 1);
+        assert.equal($argsList[0].name(), "bar");
+    });
+    it("insert at starting", function () {
+        const $funcArgs = parser.parse(g.funcArgs, `$foo,  $bar`);
+        const $funcArg = parser.parse(g.funcArg, `$a`);
+        $funcArgs.insertArg($funcArg);
+        assert.equal($funcArgs.text(), `$a, $foo,  $bar`);
+    });
+    it("insert at end", function () {
+        const $funcArgs = parser.parse(g.funcArgs, `$foo,  $bar`);
+        const $funcArg = parser.parse(g.funcArg, `Test $test = 42`);
+        $funcArgs.insertArg($funcArg);
+        assert.equal($funcArgs.text(), `$foo,  $bar, Test $test = 42`);
+    });
+    it("insert", function () {
+        const $funcArgs = parser.parse(g.funcArgs, ``);
+        const $funcArg = parser.parse(g.funcArg, `Test $test = 42`);
+        $funcArgs.insertArg($funcArg);
+        assert.equal($funcArgs.text(), `Test $test = 42`);
+    });
+    it("insert after", function () {
+        const $funcArgs = parser.parse(g.funcArgs, `$foo,  $bar`);
+        const $funcArg = parser.parse(g.funcArg, `Test $test = 42`);
+        $funcArgs.insertArg($funcArg, $funcArgs.findArgByName("foo")[0]);
+        assert.equal($funcArgs.text(), `$foo, Test $test = 42,  $bar`);
+    });
+    it("remove one", function () {
+        const $funcArgs = parser.parse(g.funcArgs, `$foo,  $bar`);
+        $funcArgs.removeArg($funcArgs.findArgByName("foo")[0]);
+        assert.equal($funcArgs.text(), `$bar`);
+    });
+    it("remove", function () {
+        const $funcArgs = parser.parse(g.funcArgs, `$foo`);
+        $funcArgs.removeArg($funcArgs.findArgByName("foo")[0]);
+        assert.equal($funcArgs.text(), ``);
     });
 });
 
