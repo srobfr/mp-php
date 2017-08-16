@@ -345,7 +345,7 @@ describe('methodMarkers', function () {
     });
 });
 
-describe.skip('method', function () {
+describe('method', function () {
     describe('name', function () {
         it("get", () => {
             const $method = parser.parse(g.method, `public function foo();`);
@@ -425,7 +425,10 @@ public function foo();`);
  */
 public function foo();`);
             $method.desc(null);
-            assert.equal(`public function foo();`, $method.text());
+            assert.equal($method.text(), `/**
+ *
+ */
+public function foo();`);
         });
         it("set", () => {
             const $method = parser.parse(g.method, `public function foo();`);
