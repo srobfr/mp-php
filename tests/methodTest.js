@@ -182,6 +182,169 @@ describe('funcArgs', function () {
     });
 });
 
+describe('funcBody', function () {
+    describe('body', function () {
+        it("get", function () {
+            const $funcBody = parser.parse(g.funcBody, ` {\nFoo;\n}`);
+            assert.equal($funcBody.body(), `Foo;`);
+        });
+        it("get null", function () {
+            const $funcBody = parser.parse(g.funcBody, ` ;`);
+            assert.equal($funcBody.body(), null);
+        });
+        it("set", function () {
+            const $funcBody = parser.parse(g.funcBody, ` {\nFoo;\n}`);
+            $funcBody.body("$a=2;");
+            assert.equal($funcBody.text(), `\n{\n    $a=2;\n}`);
+        });
+        it("set from empty", function () {
+            const $funcBody = parser.parse(g.funcBody, `   \n;`);
+            $funcBody.body("$a=2;");
+            assert.equal($funcBody.text(), `\n{\n    $a=2;\n}`);
+        });
+        it("remove", function () {
+            const $funcBody = parser.parse(g.funcBody, ` {\nFoo;\n}`);
+            $funcBody.body(null);
+            assert.equal($funcBody.text(), `;`);
+        });
+    });
+});
+
+describe('func', function () {
+    describe('name', function () {
+        it("get", () => {
+            const $func = parser.parse(g.func, `function test();`);
+            assert.equal($func.name(), "test");
+        });
+        it("set", () => {
+            const $func = parser.parse(g.func, `function test();`);
+            $func.name("bar");
+            assert.equal($func.text(), `function bar();`);
+        });
+    });
+
+    describe('body', function () {
+        it("get", () => {
+            const $func = parser.parse(g.func, `function test() { test }`);
+            assert.equal($func.body(), "test");
+        });
+        it("set", () => {
+            const $func = parser.parse(g.func, `function test();`);
+            $func.body("bar();");
+            assert.equal($func.text(), `function test()\n{\n    bar();\n}`);
+        });
+    });
+
+    describe('funcArgs', function () {
+        it("get empty", function () {
+            const $func = parser.parse(g.func, `function test();`);
+            assert.equal($func.getArgs().length, 0);
+        });
+        it("find by name", function () {
+            const $func = parser.parse(g.func, `function test(Bar $bar);`);
+            const $argsList = $func.findArgByName("bar");
+            assert.equal($argsList.length, 1);
+            assert.equal($argsList[0].name(), "bar");
+        });
+        it("insert at starting", function () {
+            const $func = parser.parse(g.func, `function test(Bar $bar);`);
+            const $funcArg = parser.parse(g.funcArg, `$a`);
+            $func.insertArg($funcArg);
+            assert.equal($func.text(), `function test($a, Bar $bar);`);
+        });
+        it("insert at end", function () {
+            const $func = parser.parse(g.func, `function test($foo,  $bar);`);
+            const $funcArg = parser.parse(g.funcArg, `Test $test = 42`);
+            $func.insertArg($funcArg);
+            assert.equal($func.text(), `function test($foo,  $bar, Test $test = 42);`);
+        });
+        it("insert", function () {
+            const $func = parser.parse(g.func, `function test();`);
+            const $funcArg = parser.parse(g.funcArg, `Test $test = 42`);
+            $func.insertArg($funcArg);
+            assert.equal($func.text(), `function test(Test $test = 42);`);
+        });
+        it("insert after", function () {
+            const $func = parser.parse(g.func, `function test($foo,  $bar);`);
+            const $funcArg = parser.parse(g.funcArg, `Test $test = 42`);
+            $func.insertArg($funcArg, $func.findArgByName("foo")[0]);
+            assert.equal($func.text(), `function test($foo, Test $test = 42,  $bar);`);
+        });
+        it("remove one", function () {
+            const $func = parser.parse(g.func, `function test($foo,  $bar);`);
+            $func.removeArg($func.findArgByName("foo")[0]);
+            assert.equal($func.text(), `function test($bar);`);
+        });
+        it("remove", function () {
+            const $func = parser.parse(g.func, `function test($foo);`);
+            $func.removeArg($func.findArgByName("foo")[0]);
+            assert.equal($func.text(), `function test();`);
+        });
+    });
+});
+
+describe('methodMarkers', function () {
+    describe('visibility', function () {
+        it("get", function () {
+            const $methodMarkers = parser.parse(g.methodMarkers, `abstract public static `);
+            assert.equal($methodMarkers.visibility(), `public`);
+        });
+        it("get null", function () {
+            const $methodMarkers = parser.parse(g.methodMarkers, `abstract static `);
+            assert.equal($methodMarkers.visibility(), null);
+        });
+        it("set", () => {
+            const $methodMarkers = parser.parse(g.methodMarkers, `abstract public static `);
+            $methodMarkers.visibility("private");
+            assert.equal(`abstract private static `, $methodMarkers.text());
+        });
+        it("set 2", () => {
+            const $methodMarkers = parser.parse(g.methodMarkers, `abstract static `);
+            $methodMarkers.visibility("private");
+            assert.equal(`abstract static private `, $methodMarkers.text());
+        });
+        it("set 3", () => {
+            const $methodMarkers = parser.parse(g.methodMarkers, ``);
+            $methodMarkers.visibility("private");
+            assert.equal($methodMarkers.text(), `private `);
+        });
+    });
+
+    describe('abstract', function () {
+        it("get", function () {
+            const $methodMarkers = parser.parse(g.methodMarkers, `abstract public static `);
+            assert.equal($methodMarkers.abstract(), true);
+        });
+        it("set", function () {
+            const $methodMarkers = parser.parse(g.methodMarkers, `public static `);
+            $methodMarkers.abstract(true);
+            assert.equal($methodMarkers.text(), `abstract public static `);
+        });
+    });
+    describe('final', function () {
+        it("get", function () {
+            const $methodMarkers = parser.parse(g.methodMarkers, `final public static `);
+            assert.equal($methodMarkers.final(), true);
+        });
+        it("set", function () {
+            const $methodMarkers = parser.parse(g.methodMarkers, `public static `);
+            $methodMarkers.final(true);
+            assert.equal($methodMarkers.text(), `final public static `);
+        });
+    });
+    describe('static', function () {
+        it("get", function () {
+            const $methodMarkers = parser.parse(g.methodMarkers, `static public final `);
+            assert.equal($methodMarkers.static(), true);
+        });
+        it("set", function () {
+            const $methodMarkers = parser.parse(g.methodMarkers, `public final `);
+            $methodMarkers.static(true);
+            assert.equal($methodMarkers.text(), `public final static `);
+        });
+    });
+});
+
 describe.skip('method', function () {
     describe('name', function () {
         it("get", () => {

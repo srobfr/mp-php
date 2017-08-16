@@ -10,6 +10,7 @@ module.exports = function (g) {
             if (!m) throw new Error(`Unable to convert PHP type "${phpType} to the equivalent PHP doc type.`);
             return m[2] + (m[1] ? "|null" : "");
         }
+
         function phpDocTypeToPhpType(phpDocType) {
             const types = phpDocType.split("|");
             let isNullable = false;
@@ -17,7 +18,7 @@ module.exports = function (g) {
             let r = null;
             types.forEach(type => {
                 let m;
-                if(type === "null") isNullable = true;
+                if (type === "null") isNullable = true;
                 else if (m = type.match(/^(.+?)\[\]$/)) {
                     r = m[1];
                     isArray = true;
@@ -45,7 +46,7 @@ module.exports = function (g) {
 
     g.optFuncArgType = optional([g.funcArgType, g.w]);
     g.optFuncArgType.buildNode = function (self) {
-        self.type = function(type) {
+        self.type = function (type) {
             let $funcArgType = self.children[0];
             if (type === undefined) return $funcArgType ? $funcArgType.findOneByGrammar(g.funcArgType).type() : null;
             if (type === null) {
@@ -117,34 +118,20 @@ module.exports = function (g) {
         };
     };
 
-    g.funcBody = [
-        g.ow,
-        or(g.semicolon, g.bracesBlock)
-    ];
-    g.funcBody.indent = g.INDENT;
-    g.funcBody.default = ($parent) => {
-        const indent = $parent.getIndent();
-        return `\n${indent}{\n${indent}${g.funcBody.indent}// TODO\n${indent}}`;
-    };
-    g.funcBody.decorator = function ($funcBody) {
-        $funcBody.body = function (body) {
-            if (body === undefined) {
-                if ($funcBody.children[1].text() === ";") return null;
-                return $funcBody.text()
-                    .replace(/^[\s\n\r\t]*\{[\s\n\r\t]*([^]*?)[\s\n\r\t]*\}$/, '$1')
-                    .split(`\n${$funcBody.getIndent()}`).join("\n");
-            }
-
+    g.funcBody = [g.ow, or(g.semicolon, g.bracesBlock)];
+    g.funcBody.default = ";";
+    g.funcBody.buildNode = function (self) {
+        self.body = function (body) {
+            const $orChild = self.children[1].children[0];
+            const $bracesBlock = ($orChild.grammar === g.bracesBlock ? $orChild : null);
+            if (body === undefined) return $bracesBlock ? $bracesBlock.children[1].text().trim() : null;
             if (body === null) {
-                $funcBody.text(";");
+                if ($bracesBlock) self.text(";");
             } else {
-                const parentIndent = ($funcBody.parent ? $funcBody.parent.getIndent() : "");
-                const bodyIndent = $funcBody.getIndent();
-                const indentedBody = _.map(body.split("\n"), (line) => (line.trim() === "" ? "" : bodyIndent + line)).join("\n");
-                $funcBody.text(`\n${parentIndent}{\n${indentedBody}\n${parentIndent}}`);
+                const indentedBody = body.split("\n").map(l => `${g.INDENT}${l}`).join("\n");
+                self.text(`\n{\n${indentedBody}\n}`);
             }
-
-            return $funcBody;
+            return self;
         };
     };
 
@@ -153,19 +140,68 @@ module.exports = function (g) {
     g.funcName = [g.ident];
 
     g.func = ["function", g.w, g.funcName, g.ow, "(", g.ow, g.funcArgs, g.ow, ")", g.funcReturnType, g.funcBody];
-    g.func.decorator = function ($func) {
-        $func.name = function (name) {
-            if (name === undefined) return $func.children[2].text();
-            $func.children[2].text(name);
-            return $func;
+    g.func.buildNode = function (self) {
+        self.name = function (name) {
+            const $funcName = self.children[2];
+            const r = $funcName.text(name);
+            return (name === undefined ? r : self);
         };
+
+        self.body = function (body) {
+            const $funcBody = self.children[10];
+            const r = $funcBody.body(body);
+            return (body === undefined ? r : self);
+        };
+
+        self.getArgs = () => self.children[6].getArgs();
+        self.findArgByName = (name) => self.children[6].findArgByName(name);
+        self.insertArg = ($funcArg, $previousNode) => self.children[6].insertArg($funcArg, $previousNode);
+        self.removeArg = ($funcArg) => self.children[6].removeArg($funcArg);
     };
 
-    g.methodMarkers = optmul([
+    g.methodMarkerBlock = [
         or(g.visibility, g.final, g.abstract, g.static),
-        g.wDefaultOneSpace
-    ]);
+        g.w
+    ];
+    g.methodMarkers = optmul(g.methodMarkerBlock);
     g.methodMarkers.order = [g.final, g.abstract, g.static, g.visibility];
+    g.methodMarkers.buildNode = function (self) {
+        self.visibility = function (visibility) {
+            let $visibility = self.findOneByGrammar(g.visibility);
+            if (visibility === undefined) return $visibility ? $visibility.text() : null;
+            if (visibility === null) {
+                if ($visibility) $visibility.parent.parent.remove();
+            } else {
+                if (!$visibility) {
+                    const $methodMarkerBlock = self.parser.parse(g.methodMarkerBlock, `${visibility} `);
+                    self.insert($methodMarkerBlock);
+                } else {
+                    $visibility.text(visibility);
+                }
+            }
+
+            return self;
+        };
+
+        function buildMarkerHandler(marker) {
+            return function (value) {
+                let $marker = self.findOneByGrammar(g[marker]);
+                if (value === undefined) return !!$marker;
+                if (!value) {
+                    if ($marker) $marker.parent.parent.remove();
+                } else if (!$marker) {
+                    const $methodMarkerBlock = self.parser.parse(g.methodMarkerBlock, `${marker} `);
+                    self.insert($methodMarkerBlock);
+                }
+
+                return self;
+            };
+        }
+
+        self.abstract = buildMarkerHandler("abstract");
+        self.final = buildMarkerHandler("final");
+        self.static = buildMarkerHandler("static");
+    };
 
     g.method = [g.optDoc, g.methodMarkers, g.func];
     g.method.default = ($parent) => {
@@ -314,7 +350,7 @@ module.exports = function (g) {
             });
         };
 
-        $node.set = function(data) {
+        $node.set = function (data) {
             if (data.desc !== undefined) $node.desc(data.desc);
             if (data.type !== undefined) $node.type(data.type);
             if (data.args !== undefined) _.each(data.args, arg => $node.setArg(arg));
