@@ -357,11 +357,17 @@ module.exports = function (g) {
     // optDoc
     g.optDoc = optional([g.doc, g.ow]);
     g.optDoc.buildNode = function (self) {
+        function removeIfEmpty() {
+            let $doc = (self.children[0] ? self.children[0].children[0] : null);
+            if ($doc && !$doc.text().match(/[^\/\* \t\r\n]/)) self.empty();
+        }
+
         self.desc = function (desc) {
             let $doc = (self.children[0] ? self.children[0].children[0] : null);
             if (desc === undefined) return $doc ? $doc.desc() : null;
             if (desc === null) {
                 if ($doc) $doc.desc(desc);
+                removeIfEmpty();
             } else {
                 if (!$doc) {
                     self.text(`/**\n *\n */\n`);
@@ -379,6 +385,7 @@ module.exports = function (g) {
             if (longDesc === undefined) return $doc ? $doc.longDesc() : null;
             if (longDesc === null) {
                 if ($doc) $doc.longDesc(longDesc);
+                removeIfEmpty();
             } else {
                 if (!$doc) {
                     self.text(`/**\n *\n */\n`);
@@ -396,6 +403,11 @@ module.exports = function (g) {
             return self.children[0].children[0].getAnnotations();
         };
 
+        self.findAnnotationsByName = function (name) {
+            if (!self.children[0]) return [];
+            return self.children[0].children[0].findAnnotationsByName(name);
+        };
+
         self.insertAnnotation = function ($docAnnotation, $previousNode) {
             let $doc = (self.children[0] ? self.children[0].children[0] : null);
             if (!$doc) {
@@ -403,6 +415,15 @@ module.exports = function (g) {
                 $doc = self.children[0].children[0];
             }
             $doc.insertAnnotation($docAnnotation, $previousNode);
+            return self;
+        };
+
+        self.removeAnnotation = function ($docAnnotation) {
+            let $doc = (self.children[0] ? self.children[0].children[0] : null);
+            if ($doc) {
+                $doc.removeAnnotation($docAnnotation);
+                removeIfEmpty();
+            }
             return self;
         };
     };

@@ -379,6 +379,69 @@ describe('method', function () {
         });
     });
 
+    describe('abstract', function () {
+        it("get true", () => {
+            const $method = parser.parse(g.method, `abstract public function foo();`);
+            assert.equal($method.abstract(), true);
+        });
+        it("get false", () => {
+            const $method = parser.parse(g.method, `function foo();`);
+            assert.equal($method.abstract(), false);
+        });
+        it("set", () => {
+            const $method = parser.parse(g.method, `public function foo();`);
+            $method.abstract(true);
+            assert.equal($method.text(), `abstract public function foo();`);
+        });
+        it("set null", () => {
+            const $method = parser.parse(g.method, `public abstract function foo();`);
+            $method.abstract(false);
+            assert.equal(`public function foo();`, $method.text());
+        });
+    });
+
+    describe('static', function () {
+        it("get true", () => {
+            const $method = parser.parse(g.method, `static public function foo();`);
+            assert.equal($method.static(), true);
+        });
+        it("get false", () => {
+            const $method = parser.parse(g.method, `function foo();`);
+            assert.equal($method.static(), false);
+        });
+        it("set", () => {
+            const $method = parser.parse(g.method, `public function foo();`);
+            $method.static(true);
+            assert.equal($method.text(), `static public function foo();`);
+        });
+        it("set null", () => {
+            const $method = parser.parse(g.method, `public static function foo();`);
+            $method.static(false);
+            assert.equal(`public function foo();`, $method.text());
+        });
+    });
+
+    describe('final', function () {
+        it("get true", () => {
+            const $method = parser.parse(g.method, `final public function foo();`);
+            assert.equal($method.final(), true);
+        });
+        it("get false", () => {
+            const $method = parser.parse(g.method, `function foo();`);
+            assert.equal($method.final(), false);
+        });
+        it("set", () => {
+            const $method = parser.parse(g.method, `public function foo();`);
+            $method.final(true);
+            assert.equal($method.text(), `final public function foo();`);
+        });
+        it("set null", () => {
+            const $method = parser.parse(g.method, `public final function foo();`);
+            $method.final(false);
+            assert.equal(`public function foo();`, $method.text());
+        });
+    });
+
     describe('body', function () {
         it("get null", () => {
             const $method = parser.parse(g.method, `public function foo();`);
@@ -425,10 +488,7 @@ public function foo();`);
  */
 public function foo();`);
             $method.desc(null);
-            assert.equal($method.text(), `/**
- *
- */
-public function foo();`);
+            assert.equal($method.text(), `public function foo();`);
         });
         it("set", () => {
             const $method = parser.parse(g.method, `public function foo();`);
@@ -437,6 +497,18 @@ public function foo();`);
  * TODO
  */
 public function foo();`, $method.text());
+        });
+    });
+
+    describe('longDesc', function () {
+        it("get", function () {
+            const $method = parser.parse(g.method, `/**
+ * TODO
+ *
+ * Foo Bar.
+ */
+public function foo();`);
+            assert.equal($method.longDesc(), `Foo Bar.`);
         });
     });
 
@@ -462,10 +534,10 @@ public function foo();`);
         it("set", () => {
             const $method = parser.parse(g.method, `public function foo();`);
             $method.type("TODO");
-            assert.equal(`/**
+            assert.equal($method.text(), `/**
  * @return TODO
  */
-public function foo();`, $method.text());
+public function foo();`);
         });
         it("set null", () => {
             const $method = parser.parse(g.method, `/**
@@ -473,7 +545,7 @@ public function foo();`, $method.text());
  */
 public function foo();`);
             $method.type(null);
-            assert.equal(`public function foo();`, $method.text());
+            assert.equal($method.text(), `public function foo();`);
         });
         it("set null 2", () => {
             const $method = parser.parse(g.method, `/**
@@ -490,16 +562,22 @@ public function foo();`, $method.text());
         });
     });
 
-    // describe('Sample', function () {
-    //     it("get", () => {
-    //         const $method = parser.parse(g.method, `public function foo();`);
-    //         assert.equal($method.body(), "TODO");
-    //     });
-    //     it("set", () => {
-    //         const $method = parser.parse(g.method, `public function foo();`);
-    //         $method.body("TODO");
-    //         assert.equal(`public function foo();`, $method.text());
-    //     });
-    // });
-
+    describe('args', function () {
+        it("getArgs", function () {
+            const $method = parser.parse(g.method, `public function foo();`);
+            assert($method.getArgs !== undefined);
+        });
+        it("findArgByName", function () {
+            const $method = parser.parse(g.method, `public function foo();`);
+            assert($method.findArgByName !== undefined);
+        });
+        it("insertArg", function () {
+            const $method = parser.parse(g.method, `public function foo();`);
+            assert($method.insertArg !== undefined);
+        });
+        it("removeArg", function () {
+            const $method = parser.parse(g.method, `public function foo();`);
+            assert($method.removeArg !== undefined);
+        });
+    });
 });

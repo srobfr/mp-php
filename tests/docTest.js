@@ -558,7 +558,7 @@ describe('optDoc', function () {
         it("set empty", function () {
             const $optDoc = parser.parse(g.optDoc, `/**\n * Foo\n */\n`);
             $optDoc.desc(null);
-            assert.equal($optDoc.text(), `/**\n *\n */\n`);
+            assert.equal($optDoc.text(), ``);
         });
     });
 

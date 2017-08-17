@@ -215,10 +215,38 @@ module.exports = function (g) {
 
     g.method.buildNode = function(self) {
         proxy("desc", self, () => self.children[0]);
+        proxy("longDesc", self, () => self.children[0]);
+
         proxy("visibility", self, () => self.children[1]);
+        proxy("abstract", self, () => self.children[1]);
+        proxy("static", self, () => self.children[1]);
+        proxy("final", self, () => self.children[1]);
+
         proxy("name", self, () => self.children[2]);
         proxy("body", self, () => self.children[2]);
 
+        proxy("getArgs", self, () => self.children[2]);
+        proxy("findArgByName", self, () => self.children[2]);
+        proxy("insertArg", self, () => self.children[2]);
+        proxy("removeArg", self, () => self.children[2]);
 
+        self.type = function(type) {
+            const $optDoc = self.children[0];
+            let $returnAnnotation = _.first($optDoc.findAnnotationsByName('return'));
+
+            if (type === undefined) return $returnAnnotation ? $returnAnnotation.findOneByGrammar(g.docAnnotationValue).value().trim() : null;
+            if (type === null) {
+                if ($returnAnnotation) $optDoc.removeAnnotation($returnAnnotation);
+            } else {
+                if (!$returnAnnotation) {
+                    $returnAnnotation = self.parser.parse(g.docAnnotation, ` @return ${type}`);
+                    $optDoc.insertAnnotation($returnAnnotation);
+                } else {
+                    $returnAnnotation.value(type);
+                }
+            }
+
+            return self;
+        };
     };
 };
