@@ -115,7 +115,7 @@ describe('class', function () {
         it("find by name", () => {
             const $class = parser.parse(g.class, `class Test implements Foo, Bar {}`);
             const $implementsValue = $class.findOneImplementsValueByName("Bar");
-            assert($implementsValue !== null);
+            assert($implementsValue);
             assert.equal($implementsValue.name(), "Bar");
         });
         it("insert from empty", () => {
@@ -139,6 +139,15 @@ describe('class', function () {
             const $class = parser.parse(g.class, `class Test implements Foo {}`);
             $class.removeImplementsValue($class.getImplementsValues()[0]);
             assert.equal($class.text(), `class Test {}`);
+        });
+    });
+
+    describe('use', function () {
+        it("get all", () => {
+            const $class = parser.parse(g.class, `class Test { use Foo; use Plop; }`);
+            const $uses = $class.getUses();
+            assert.equal($uses.length, 2);
+            assert.equal($uses[0].name(), "Foo");
         });
     });
 });

@@ -169,22 +169,27 @@ module.exports = function (g) {
             };
         }
 
+        function proxyGet(methodName, target) {
+            self[methodName] = (() => target()[methodName].apply(this, arguments));
+        }
+
+        function proxySet(methodName, target) {
+            self[methodName] = function () {
+                target()[methodName].apply(this, arguments);
+                return self;
+            };
+        }
+
         proxy("abstract", () => self.children[1]);
         proxy("final", () => self.children[1]);
         proxy("kind", () => self.children[2]);
         proxy("name", () => self.children[4]);
         proxy("extends", () => self.children[5]);
 
-        self.getImplementsValues = () => self.children[5].getImplementsValues();
-        self.findOneImplementsValueByName = (name) => self.children[5].findOneImplementsValueByName(name);
-        self.insertImplementsValue = function ($implementsValue) {
-            self.children[5].insertImplementsValue($implementsValue);
-            return self;
-        };
-        self.removeImplementsValue = function ($implementsValue) {
-            self.children[5].removeImplementsValue($implementsValue);
-            return self;
-        };
+        proxyGet("getImplementsValues", () => self.children[5]);
+        proxyGet("findOneImplementsValueByName", () => self.children[5]);
+        proxySet("insertImplementsValue", () => self.children[5]);
+        proxySet("removeImplementsValue", () => self.children[5]);
     };
 
 };
