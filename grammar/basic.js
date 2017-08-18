@@ -38,6 +38,7 @@ module.exports = function (g) {
     // Braces block
     g.bracesBlock = [];
     g.bracesBlock.push("{", optmul(or(g.bracesBlock, /^[^\{\}]+/)), "}");
+    g.bracesBlock.indent = g.INDENT;
 
     // PHP Variable
     g.variable = ["$", g.ident];
