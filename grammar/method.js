@@ -207,29 +207,29 @@ module.exports = function (g) {
     g.method = [g.optDoc, g.methodMarkers, g.func];
     g.method.default = `public function todo();`;
 
-    function proxy(methodName, source, target) {
-        source[methodName] = function() {
-            const r = target()[methodName].apply(this, arguments);
-            return (arguments[0] === undefined ? r : source);
-        };
-    }
-
     g.method.buildNode = function(self) {
-        proxy("desc", self, () => self.children[0]);
-        proxy("longDesc", self, () => self.children[0]);
+        function proxy(methodName, target) {
+            self[methodName] = function() {
+                const r = target()[methodName].apply(this, arguments);
+                return (arguments[0] === undefined ? r : self);
+            };
+        }
 
-        proxy("visibility", self, () => self.children[1]);
-        proxy("abstract", self, () => self.children[1]);
-        proxy("static", self, () => self.children[1]);
-        proxy("final", self, () => self.children[1]);
+        proxy("desc", () => self.children[0]);
+        proxy("longDesc", () => self.children[0]);
 
-        proxy("name", self, () => self.children[2]);
-        proxy("body", self, () => self.children[2]);
+        proxy("visibility", () => self.children[1]);
+        proxy("abstract", () => self.children[1]);
+        proxy("static", () => self.children[1]);
+        proxy("final", () => self.children[1]);
 
-        proxy("getArgs", self, () => self.children[2]);
-        proxy("findArgByName", self, () => self.children[2]);
-        proxy("insertArg", self, () => self.children[2]);
-        proxy("removeArg", self, () => self.children[2]);
+        proxy("name", () => self.children[2]);
+        proxy("body", () => self.children[2]);
+
+        proxy("getArgs", () => self.children[2]);
+        proxy("findArgByName", () => self.children[2]);
+        proxy("insertArg", () => self.children[2]);
+        proxy("removeArg", () => self.children[2]);
 
         self.type = function(type) {
             const $optDoc = self.children[0];

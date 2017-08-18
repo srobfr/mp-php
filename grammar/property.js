@@ -3,51 +3,67 @@ const {multiple, not, optional, optmul, or} = require("microparser").grammarHelp
 const {descHelper, longDescHelper} = require(__dirname + "/../helpers.js");
 
 module.exports = function(g) {
-    g.propertyMarker = or(g.visibility, g.abstract, g.static);
-
-    g.propertyMarkers = optmul([g.propertyMarker, g.wDefaultOneSpace]);
+    g.propertyMarkerBlock = [
+        or(g.visibility, g.abstract, g.static),
+        g.w
+    ];
+    g.propertyMarkers = optmul(g.propertyMarkerBlock);
     g.propertyMarkers.order = [g.abstract, g.static, g.visibility];
+    g.propertyMarkers.buildNode = function (self) {
+        self.visibility = function (visibility) {
+            let $visibility = self.findOneByGrammar(g.visibility);
+            if (visibility === undefined) return $visibility ? $visibility.text() : null;
+            if (visibility === null) {
+                if ($visibility) $visibility.parent.parent.remove();
+            } else {
+                if (!$visibility) {
+                    const $propertyMarkerBlock = self.parser.parse(g.propertyMarkerBlock, `${visibility} `);
+                    self.insert($propertyMarkerBlock);
+                } else {
+                    $visibility.text(visibility);
+                }
+            }
+
+            return self;
+        };
+
+        function buildMarkerHandler(marker) {
+            return function (value) {
+                let $marker = self.findOneByGrammar(g[marker]);
+                if (value === undefined) return !!$marker;
+                if (!value) {
+                    if ($marker) $marker.parent.parent.remove();
+                } else if (!$marker) {
+                    const $propertyMarkerBlock = self.parser.parse(g.propertyMarkerBlock, `${marker} `);
+                    self.insert($propertyMarkerBlock);
+                }
+
+                return self;
+            };
+        }
+
+        self.abstract = buildMarkerHandler("abstract");
+        self.static = buildMarkerHandler("static");
+    };
 
     g.property = [g.optDoc, g.propertyMarkers, g.variable, g.optDefaultValue, g.ow, g.semicolon];
-    g.property.default = ($parent) => {
-        const indent = g.INDENT;
-        return `/**\n${indent} * TODO\n${indent} */\n${indent}private $todo;`;
-    };
-    g.property.decorator = function ($node) {
-        $node.value = function (value) {
-            const $optDefaultValue = $node.findOne(g.optDefaultValue);
-            if (value === undefined) return ($optDefaultValue.children.length > 0 ? $optDefaultValue.findOne(g.staticExpr).text() : null);
-            if (value === null) $optDefaultValue.text("");
-            else $optDefaultValue.getOrCreateChild().findOne(g.staticExpr).text(value);
-            return $node;
-        };
+    g.property.buildNode = function(self) {
+        function proxy(methodName, target) {
+            self[methodName] = function() {
+                const r = target()[methodName].apply(this, arguments);
+                return (arguments[0] === undefined ? r : self);
+            };
+        }
 
-        $node.name = function (name) {
-            const $ident = $node.findOne(g.variable).findOne(g.ident);
-            if (name === undefined) return $ident.text();
-            $ident.text(name);
-            return $node;
-        };
+        proxy("desc", () => self.children[0]);
+        proxy("longDesc", () => self.children[0]);
 
-        $node.visibility = function (visibility) {
-            const $visibility = $node.findOne(g.visibility);
-            if (visibility === undefined) return $visibility.text();
-            $visibility.text(visibility);
-            return $node;
-        };
+        proxy("visibility", () => self.children[1]);
+        proxy("abstract", () => self.children[1]);
+        proxy("static", () => self.children[1]);
 
-        $node.type = function (type) {
-            const $optDoc = $node.findOne(g.optDoc);
-            const $doc = $optDoc.getOrCreateChild().findOne(g.doc);
-            const $docAnnotations = $doc.findOne(g.docAnnotations);
-            const $varAnnotation = $docAnnotations.findOne($node => $node.grammar === g.docAnnotationContainer && $node.findOne(g.docAnnotationIdent).text() === "@var");
-            if ($varAnnotation) $doc.removeAnnotation($varAnnotation);
-            $docAnnotations.add(`@var ${type}`);
-            $doc.fix();
-        };
-
-        $node.desc = (desc) => descHelper(g, $node, desc);
-        $node.longDesc = (longDesc) => longDescHelper(g, $node, longDesc);
+        proxy("name", () => self.children[2]);
+        proxy("value", () => self.children[3]);
     };
 
     // TODO
