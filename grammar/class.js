@@ -80,10 +80,21 @@ module.exports = function (g) {
     g.implementsValuesSeparator = [g.ow, ",", g.ow];
     g.implementsValuesSeparator.default = ", ";
 
-    g.implementsValues = multiple(g.fqn, g.implementsValuesSeparator);
+    g.implementsValue = [g.fqn];
+    g.implementsValue.tag = "implementsValue";
+    g.implementsValue.buildNode = function (self) {
+        self.name = self.text;
+    };
+
+    g.implementsValues = multiple(g.implementsValue, g.implementsValuesSeparator);
     g.implementsValues.order = [
         ($node => $node.text())
     ];
+    g.implementsValues.buildNode = function (self) {
+        self.getImplementsValues = () => self.findDirectByGrammar(g.implementsValue);
+        self.findOneImplementsValueByName = (name => _.find(self.getImplementsValues(), ($node => $node.name() === name)));
+        self.removeImplementsValue = ($implementsValue => $implementsValue.removeWithSeparator());
+    };
 
     g.implements = [g.w, "implements", g.w, g.implementsValues];
     g.extends = [g.w, "extends", g.w, g.fqn];
@@ -91,8 +102,8 @@ module.exports = function (g) {
     g.implementsExtendsBlock = or(g.implements, g.extends);
     g.implementsExtends = optmul(g.implementsExtendsBlock);
     g.implementsExtends.order = [g.extends, g.implements];
-    g.implementsExtends.buildNode = function(self) {
-        self.extends = function(_extends) {
+    g.implementsExtends.buildNode = function (self) {
+        self.extends = function (_extends) {
             let $extends = self.findOneByGrammar(g.extends);
             if (_extends === undefined) return $extends ? $extends.children[3].text() : null;
             if (_extends === null) {
@@ -106,6 +117,38 @@ module.exports = function (g) {
                 }
             }
 
+            return self;
+        };
+
+        self.getImplementsValues = function () {
+            const $implementsValues = self.findOneByGrammar(g.implementsValues);
+            return $implementsValues ? $implementsValues.getImplementsValues() : [];
+        };
+
+        self.findOneImplementsValueByName = function (name) {
+            const $implementsValues = self.findOneByGrammar(g.implementsValues);
+            return $implementsValues ? $implementsValues.findOneImplementsValueByName(name) : null;
+        };
+
+        self.insertImplementsValue = function ($implementsValue) {
+            const $implementsValues = self.findOneByGrammar(g.implementsValues);
+            if (!$implementsValues) {
+                const $implementsExtendsBlock = self.parser.parse(g.implementsExtendsBlock, ` implements TODO`);
+                $implementsExtendsBlock.findOneByGrammar(g.implementsValue).replaceWith($implementsValue);
+                self.insert($implementsExtendsBlock);
+            } else if (!self.findOneImplementsValueByName($implementsValue.name())) {
+                $implementsValues.insert($implementsValue);
+            }
+
+            return self;
+        };
+
+        self.removeImplementsValue = function ($implementsValue) {
+            const $implementsValues = self.findOneByGrammar(g.implementsValues);
+            if ($implementsValues) {
+                $implementsValues.removeImplementsValue($implementsValue);
+                if ($implementsValues.children.length === 0) self.findOneByGrammar(g.implements).parent.removeWithSeparator();
+            }
             return self;
         };
     };
@@ -128,12 +171,20 @@ module.exports = function (g) {
 
         proxy("abstract", () => self.children[1]);
         proxy("final", () => self.children[1]);
-
         proxy("kind", () => self.children[2]);
-
         proxy("name", () => self.children[4]);
-
         proxy("extends", () => self.children[5]);
+
+        self.getImplementsValues = () => self.children[5].getImplementsValues();
+        self.findOneImplementsValueByName = (name) => self.children[5].findOneImplementsValueByName(name);
+        self.insertImplementsValue = function ($implementsValue) {
+            self.children[5].insertImplementsValue($implementsValue);
+            return self;
+        };
+        self.removeImplementsValue = function ($implementsValue) {
+            self.children[5].removeImplementsValue($implementsValue);
+            return self;
+        };
     };
 
 };

@@ -104,4 +104,41 @@ describe('class', function () {
             assert.equal($class.text(), `class Test {}`);
         });
     });
+
+    describe('implements', function () {
+        it("get all", () => {
+            const $class = parser.parse(g.class, `class Test implements Foo, Bar {}`);
+            const $implementsValues = $class.getImplementsValues();
+            assert.equal($implementsValues.length, 2);
+            assert.equal($implementsValues[0].name(), "Foo");
+        });
+        it("find by name", () => {
+            const $class = parser.parse(g.class, `class Test implements Foo, Bar {}`);
+            const $implementsValue = $class.findOneImplementsValueByName("Bar");
+            assert($implementsValue !== null);
+            assert.equal($implementsValue.name(), "Bar");
+        });
+        it("insert from empty", () => {
+            const $class = parser.parse(g.class, `class Test {}`);
+            const $implementsValue = parser.parse(g.implementsValue, `Foo`);
+            $class.insertImplementsValue($implementsValue);
+            assert.equal($class.text(), `class Test implements Foo {}`);
+        });
+        it("insert", () => {
+            const $class = parser.parse(g.class, `class Test implements Foo {}`);
+            const $implementsValue = parser.parse(g.implementsValue, `Bar`);
+            $class.insertImplementsValue($implementsValue);
+            assert.equal($class.text(), `class Test implements Bar, Foo {}`);
+        });
+        it("remove", () => {
+            const $class = parser.parse(g.class, `class Test implements Bar, Foo {}`);
+            $class.removeImplementsValue($class.getImplementsValues()[0]);
+            assert.equal($class.text(), `class Test implements Foo {}`);
+        });
+        it("remove last", () => {
+            const $class = parser.parse(g.class, `class Test implements Foo {}`);
+            $class.removeImplementsValue($class.getImplementsValues()[0]);
+            assert.equal($class.text(), `class Test {}`);
+        });
+    });
 });
