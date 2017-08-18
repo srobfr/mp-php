@@ -3,14 +3,37 @@ const {multiple, not, optional, optmul, or} = require("microparser").grammarHelp
 const {descHelper, longDescHelper} = require(__dirname + "/../helpers.js");
 
 module.exports = function (g) {
+    g.classUseAliasBlock = optional([g.w, "as", g.w, g.ident]);
     g.classUse = [
         g.optDoc,
         "use", g.w,
         g.fqn,
-        optional([g.w, "as", g.w, g.ident]),
+        g.classUseAliasBlock,
         g.ow, g.semicolon
     ];
     g.classUse.default = "use TODO;";
+    g.classUse.buildNode = function (self) {
+        self.fqn = function(fqn) {
+            const $fqn = self.children[3];
+            const r = $fqn.text(fqn);
+            return (fqn === undefined ? r : self);
+        };
+        self.alias = function(alias) {
+            let $optAliasBlock = self.children[4];
+            if (alias === undefined) return $optAliasBlock ? $optAliasBlock.findOneByGrammar(g.ident).text() : null;
+            if (alias === null) {
+                $optAliasBlock.empty();
+            } else {
+                if ($optAliasBlock.children.length === 0) {
+                    $optAliasBlock.text(` as ${alias}`);
+                } else {
+                    $optAliasBlock.findOneByGrammar(g.ident).text(alias);
+                }
+            }
+
+            return self;
+        };
+    };
 
     g.classBodyItemsSeparator = [g.wOrComments];
     g.classBodyItemsSeparator.default = `\n\n${g.IDENT}`;
@@ -27,6 +50,9 @@ module.exports = function (g) {
         g.public, g.protected, g.private,
         ($node => $node.text())
     ];
+    g.classBodyItems.buildNode = function (self) {
+        self.getUses = () => self.findByGrammar(g.classUse);
+    };
 
     g.classBodyStart = [g.owOrComments];
     g.classBodyStart.default = `\n\n${g.IDENT}`;
@@ -170,7 +196,9 @@ module.exports = function (g) {
         }
 
         function proxyGet(methodName, target) {
-            self[methodName] = (() => target()[methodName].apply(this, arguments));
+            self[methodName] = function () {
+                return target()[methodName].apply(this, arguments);
+            };
         }
 
         function proxySet(methodName, target) {
@@ -190,6 +218,8 @@ module.exports = function (g) {
         proxyGet("findOneImplementsValueByName", () => self.children[5]);
         proxySet("insertImplementsValue", () => self.children[5]);
         proxySet("removeImplementsValue", () => self.children[5]);
+
+        proxyGet("getUses", () => self.children[7].children[2]);
     };
 
 };
