@@ -4,21 +4,9 @@ const {multiple, not, optional, optmul, or} = require("microparser").grammarHelp
 module.exports = function (g) {
     g.namespace = ["namespace", g.w, g.fqn, g.ow, g.semicolon];
     g.namespace.default = "namespace TODO;";
+    g.namespace.tag = "namespace";
 
     g.require = [/^(?:require|include)(?:_once)?/, g.ow, (/^[^;]+/), g.semicolon];
-
-    g.fileDoc = optional([g.doc, g.w]);
-
-    g.fileItemsSeparator = [g.wOrComments];
-    g.fileItemsSeparator.default = "\n";
-    g.fileItemsSeparator.decorator = function (node) {
-        node.fix = function () {
-            node.text(node.prev.children[0].grammar === node.next.children[0].grammar
-                ? "\n"
-                : "\n\n"
-            );
-        };
-    };
 
     g.use = [
         "use", g.w,
@@ -28,20 +16,44 @@ module.exports = function (g) {
     ];
     g.use.default = "use TODO;";
 
-    g.fileItems = optmul(or(
+    g.fileItemsSeparator = [g.wOrComments];
+    g.fileItemsSeparator.default = `\n\n`;
+
+    g.fileDoc = [g.doc];
+
+    g.fileItem = or(
         g.require,
         g.namespace,
-        g.use
-    ), g.fileItemsSeparator);
-    g.fileItems.order = [g.namespace, g.use, g.require, ($node) => $node.text()];
+        g.use,
+        g.class,
+        g.fileDoc
+    );
+
+    g.fileItem.default = "namespace Todo;";
+
+    g.fileItems = optmul(
+        g.fileItem,
+        g.fileItemsSeparator
+    );
+    g.fileItems.order = [
+        g.fileDoc,
+        g.namespace,
+        g.use,
+        g.require,
+        g.class,
+        ($node) => $node.text()
+    ];
+    g.fileItems.buildNode = function (self) {
+        self.getUses = () => self.findByGrammar(g.use);
+    };
+
+    g.fileEnd = [g.ow, optional(["?>", g.ow])];
+    g.fileEnd.default = "\n";
 
     g.file = [
-        g.phpBlockStart, g.owDefaultNextLine,
-        g.fileDoc,
+        g.phpBlockStart, g.ow,
         g.fileItems, g.ow,
-        g.class, g.ow,
-        g.phpBlockEnd,
-        optional([g.ow, g.eof])
+        g.fileEnd,
     ];
     g.file.decorator = function ($node) {
         $node.getClass = () => $node.findOne(g.class);

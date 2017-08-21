@@ -55,7 +55,6 @@ module.exports = function (g) {
 
     // docDesc
     g.docDesc = [not(/^ *@/), g.docLineContent];
-    g.docDesc.tag = "docDesc";
     g.docDesc.buildNode = function (self) {
         self.desc = (desc) => {
             const $docLineContent = self.children[1];

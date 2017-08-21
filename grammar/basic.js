@@ -11,8 +11,6 @@ module.exports = function (g) {
 
     g.eof = /^$/;
     g.phpBlockStart = "<?php";
-    g.phpBlockEnd = [g.ow, or("?>", g.eof)];
-    g.phpBlockEnd.default = "\n";
     g.semicolon = /^;+/;
     g.quotedString = /^'(\\'|[^']+)*'/;
     g.doubleQuotedString = /^"(\\"|[^"]+)*"/;

@@ -13,12 +13,12 @@ module.exports = function (g) {
     ];
     g.classUse.default = "use TODO;";
     g.classUse.buildNode = function (self) {
-        self.fqn = function(fqn) {
+        self.fqn = function (fqn) {
             const $fqn = self.children[3];
             const r = $fqn.text(fqn);
             return (fqn === undefined ? r : self);
         };
-        self.alias = function(alias) {
+        self.alias = function (alias) {
             let $optAliasBlock = self.children[4];
             if (alias === undefined) return $optAliasBlock ? $optAliasBlock.findOneByGrammar(g.ident).text() : null;
             if (alias === null) {
@@ -36,10 +36,15 @@ module.exports = function (g) {
     };
 
     g.classBodyItemsSeparator = [g.wOrComments];
-    g.classBodyItemsSeparator.default = `\n\n${g.IDENT}`;
+    g.classBodyItemsSeparator.default = `\n\n${g.INDENT}`;
+    g.classBodyItemsSeparator.tag = "classBodyItemsSeparator";
+
+    g.classBodyItem = or(g.method, g.property, g.constant, g.classUse);
+    g.classBodyItem.default = "$todo;";
+    g.classBodyItem.tag = "classBodyItem";
 
     g.classBodyItems = optmul(
-        or(g.method, g.property, g.constant, g.classUse),
+        g.classBodyItem,
         g.classBodyItemsSeparator
     );
     g.classBodyItems.order = [
@@ -52,15 +57,61 @@ module.exports = function (g) {
     ];
     g.classBodyItems.buildNode = function (self) {
         self.getUses = () => self.findByGrammar(g.classUse);
+        self.getConstants = () => self.findByGrammar(g.constant);
+        self.getProperties = () => self.findByGrammar(g.property);
+        self.getMethods = () => self.findByGrammar(g.method);
     };
 
     g.classBodyStart = [g.owOrComments];
-    g.classBodyStart.default = `\n\n${g.IDENT}`;
+    g.classBodyStart.default = `\n${g.INDENT}`;
+    g.classBodyStart.tag = "classBodyStart";
+
     g.classBodyEnd = [g.owOrComments];
     g.classBodyEnd.default = "\n";
+    g.classBodyEnd.tag = "classBodyEnd";
+    g.classBodyEnd.buildNode = function (self) {
+        self.fix = function () {
+            self.text(g.classBodyEnd.default);
+            return self;
+        };
+    };
+
 
     g.classBody = ["{", g.classBodyStart, g.classBodyItems, g.classBodyEnd, "}"];
     g.classBody.indent = g.INDENT;
+    g.classBody.buildNode = function (self) {
+        self.fixStart = function () {
+            const $classBodyItems = self.children[2];
+            if ($classBodyItems.children.length > 0) self.children[1].text(g.classBodyStart.default);
+            else self.children[1].text("\n");
+            return self;
+        };
+
+        self.fixEnd = () => {
+            self.children[3].text(g.classBodyEnd.default);
+            return self;
+        };
+
+        function insertItem($item, $previousNode) {
+            const $classBodyItem = self.parser.parse(g.classBodyItem);
+            $classBodyItem.children[0].replaceWith($item);
+            self.children[2].insert($classBodyItem, $previousNode);
+            if (!$classBodyItem.prev) self.fixStart();
+            if (!$classBodyItem.next) self.fixEnd();
+        }
+
+        function removeItem($item) {
+            $item.parent.removeWithSeparator();
+            if (!$item.parent.prev) self.fixStart();
+            if (!$item.parent.next) self.fixEnd();
+        }
+
+        self.removeUse = removeItem;
+        self.insertUse = insertItem;
+
+        self.removeConstant = removeItem;
+        self.insertConstant = insertItem;
+    };
 
     g.className = [g.ident];
     g.className.buildNode = function (self) {
@@ -208,6 +259,9 @@ module.exports = function (g) {
             };
         }
 
+        proxy("desc", () => self.children[0]);
+        proxy("longDesc", () => self.children[0]);
+
         proxy("abstract", () => self.children[1]);
         proxy("final", () => self.children[1]);
         proxy("kind", () => self.children[2]);
@@ -220,6 +274,19 @@ module.exports = function (g) {
         proxySet("removeImplementsValue", () => self.children[5]);
 
         proxyGet("getUses", () => self.children[7].children[2]);
-    };
+        proxyGet("insertUse", () => self.children[7]);
+        proxyGet("removeUse", () => self.children[7]);
 
+        proxyGet("getConstants", () => self.children[7].children[2]);
+        proxyGet("insertConstant", () => self.children[7]);
+        proxyGet("removeConstant", () => self.children[7]);
+
+        proxyGet("getProperties", () => self.children[7].children[2]);
+        proxyGet("insertProperty", () => self.children[7]);
+        proxyGet("removeProperty", () => self.children[7]);
+
+        proxyGet("getMethods", () => self.children[7].children[2]);
+        proxyGet("insertMethod", () => self.children[7]);
+        proxyGet("removeMethod", () => self.children[7]);
+    };
 };

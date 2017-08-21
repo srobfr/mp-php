@@ -6,11 +6,23 @@ const g = require(__dirname + "/../index.js").grammar;
 const parser = new Parser();
 
 describe('class', function () {
-    it("pass", function() {
+    it("pass", function () {
         parser.parse(g.class, `class Test {}`);
     });
     it("fail", function () {
         assert.throws(() => parser.parse(g.class, `class Test {};`));
+    });
+
+    describe('desc', function () {
+        it("get", function () {
+            const $class = parser.parse(g.class, `/** Foo */class Test {}`);
+            assert.equal($class.desc(), `Foo`);
+        });
+        it("set", function () {
+            const $class = parser.parse(g.class, `class Test {}`);
+            $class.desc("Foo");
+            assert.equal($class.text(), `/**\n * Foo\n */\nclass Test {}`);
+        });
     });
 
     describe('name', function () {
@@ -45,7 +57,7 @@ describe('class', function () {
             assert.equal(`class Test {}`, $class.text());
         });
     });
-    
+
     describe('final', function () {
         it("get true", () => {
             const $class = parser.parse(g.class, `final class Test {}`);
@@ -149,6 +161,67 @@ describe('class', function () {
             assert.equal($uses.length, 2);
             assert.equal($uses[0].fqn(), "Foo");
             assert.equal($uses[0].alias(), "Bar");
+        });
+
+        it("insert from empty", () => {
+            const $class = parser.parse(g.class, `class Test {}`);
+            const $use = parser.parse(g.classUse, `use Test;`);
+            $class.insertUse($use);
+            assert.equal($class.text(), `class Test {\n    use Test;\n}`);
+        });
+
+        it("insert", () => {
+            const $class = parser.parse(g.class, `class Test {use Test;}`);
+            const $use = parser.parse(g.classUse, `use Plop;`);
+            $class.insertUse($use);
+            assert.equal($class.text(), `class Test {\n    use Plop;\n\n    use Test;}`);
+        });
+
+        it("remove first", () => {
+            const $class = parser.parse(g.class, `class Test { use Test; use Plop; }`);
+            const $use = $class.getUses()[0];
+            $class.removeUse($use);
+            assert.equal($class.text(), `class Test {\n    use Plop; }`);
+        });
+        it("remove last", () => {
+            const $class = parser.parse(g.class, `class Test { use Test; use Plop; }`);
+            const $use = $class.getUses()[1];
+            $class.removeUse($use);
+            assert.equal($class.text(), `class Test { use Test;\n}`);
+        });
+        it("remove all", () => {
+            const $class = parser.parse(g.class, `class Test { use Test; }`);
+            const $use = $class.getUses()[0];
+            $class.removeUse($use);
+            assert.equal($class.text(), `class Test {\n\n}`);
+        });
+    });
+
+    describe('constants', function () {
+        it("get all", () => {
+            const $class = parser.parse(g.class, `class Test { use Test; const FOO = 4; }`);
+            const $constants = $class.getConstants();
+            assert.equal($constants.length, 1);
+            assert.equal($constants[0].name(), "FOO");
+            assert.equal($constants[0].value(), "4");
+        });
+    });
+
+    describe('properties', function () {
+        it("get all", () => {
+            const $class = parser.parse(g.class, `class Test { use Test; $foo; }`);
+            const $properties = $class.getProperties();
+            assert.equal($properties.length, 1);
+            assert.equal($properties[0].name(), "foo");
+        });
+    });
+
+    describe('methods', function () {
+        it("get all", () => {
+            const $class = parser.parse(g.class, `class Test { use Test; public function foo(); }`);
+            const $methods = $class.getMethods();
+            assert.equal($methods.length, 1);
+            assert.equal($methods[0].name(), "foo");
         });
     });
 });
