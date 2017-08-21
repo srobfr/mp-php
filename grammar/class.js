@@ -3,12 +3,10 @@ const {multiple, not, optional, optmul, or} = require("microparser").grammarHelp
 const {descHelper, longDescHelper} = require(__dirname + "/../helpers.js");
 
 module.exports = function (g) {
-    g.classUseAliasBlock = optional([g.w, "as", g.w, g.ident]);
     g.classUse = [
         g.optDoc,
         "use", g.w,
         g.fqn,
-        g.classUseAliasBlock,
         g.ow, g.semicolon
     ];
     g.classUse.default = "use TODO;";
@@ -17,21 +15,6 @@ module.exports = function (g) {
             const $fqn = self.children[3];
             const r = $fqn.text(fqn);
             return (fqn === undefined ? r : self);
-        };
-        self.alias = function (alias) {
-            let $optAliasBlock = self.children[4];
-            if (alias === undefined) return $optAliasBlock ? $optAliasBlock.findOneByGrammar(g.ident).text() : null;
-            if (alias === null) {
-                $optAliasBlock.empty();
-            } else {
-                if ($optAliasBlock.children.length === 0) {
-                    $optAliasBlock.text(` as ${alias}`);
-                } else {
-                    $optAliasBlock.findOneByGrammar(g.ident).text(alias);
-                }
-            }
-
-            return self;
         };
     };
 

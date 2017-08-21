@@ -8,13 +8,37 @@ module.exports = function (g) {
 
     g.require = [/^(?:require|include)(?:_once)?/, g.ow, (/^[^;]+/), g.semicolon];
 
+    g.useAliasBlock = optional([g.w, "as", g.w, g.ident]);
     g.use = [
+        g.optDoc,
         "use", g.w,
         g.fqn,
-        optional([g.w, "as", g.w, g.ident]),
+        g.useAliasBlock,
         g.ow, g.semicolon
     ];
     g.use.default = "use TODO;";
+    g.use.buildNode = function (self) {
+        self.fqn = function (fqn) {
+            const $fqn = self.children[3];
+            const r = $fqn.text(fqn);
+            return (fqn === undefined ? r : self);
+        };
+        self.alias = function (alias) {
+            let $optAliasBlock = self.children[4];
+            if (alias === undefined) return $optAliasBlock ? $optAliasBlock.findOneByGrammar(g.ident).text() : null;
+            if (alias === null) {
+                $optAliasBlock.empty();
+            } else {
+                if ($optAliasBlock.children.length === 0) {
+                    $optAliasBlock.text(` as ${alias}`);
+                } else {
+                    $optAliasBlock.findOneByGrammar(g.ident).text(alias);
+                }
+            }
+
+            return self;
+        };
+    };
 
     g.fileItemsSeparator = [g.wOrComments];
     g.fileItemsSeparator.default = `\n\n`;
@@ -44,7 +68,51 @@ module.exports = function (g) {
         ($node) => $node.text()
     ];
     g.fileItems.buildNode = function (self) {
+        function insertItem($item, $previousNode) {
+            const $classBodyItem = self.parser.parse(g.classBodyItem);
+            $classBodyItem.children[0].replaceWith($item);
+            self.insert($classBodyItem, $previousNode);
+            return self;
+        }
+
+        function removeItem($item) {
+            $item.parent.removeWithSeparator();
+            return self;
+        }
+
+        self.namespace = function (namespace) {
+            let $namespace = self.findOneByGrammar(g.namespace);
+            if (namespace === undefined) return $namespace ? $namespace.findOneByGrammar(g.fqn).text() : null;
+            if (namespace === null) {
+                if ($namespace) $namespace.parent.removeWithSeparator();
+            } else {
+                if (!$namespace) {
+                    const $namespaceItem = self.parser.parse(g.fileItem, g.namespace.default);
+                    $namespace = $namespaceItem.children[0];
+                    self.insert($namespace);
+                }
+
+                $namespace.findOneByGrammar(g.fqn).text(namespace);
+            }
+
+            return self;
+        };
+
         self.getUses = () => self.findByGrammar(g.use);
+        self.class = function ($class) {
+            const $existingClass = self.findOneByGrammar(g.class);
+            if ($class === undefined) return $existingClass;
+            if ($class === null) {
+                if ($existingClass) $existingClass.removeWithSeparator();
+            } else {
+                insertItem($class);
+            }
+
+            return self;
+        };
+
+        self.insertUse = insertItem;
+        self.removeUse = removeItem;
     };
 
     g.fileEnd = [g.ow, optional(["?>", g.ow])];
@@ -55,53 +123,38 @@ module.exports = function (g) {
         g.fileItems, g.ow,
         g.fileEnd,
     ];
-    g.file.decorator = function ($node) {
-        $node.getClass = () => $node.findOne(g.class);
-        $node.namespace = (namespace) => {
-            const $namespaceIdent = $node.findOne(g.namespace).findOne(g.fqn);
-            if (namespace === undefined) return $namespaceIdent.text();
-            $namespaceIdent.text(namespace);
-            return $node;
-        };
-        $node.getUse = (alias) => $node.findOne(g.fileItems).findOne(($node) => {
-            if ($node.grammar !== g.use) return false;
-            return _.last($node.find(g.ident)).text() === alias;
-        });
-        $node.setUse = (use) => {
-            if (_.isString(use)) use = {name: use};
-            const className = use.name.match(/[a-z_]+$/i)[0];
-            let alias = use.alias || className;
-            const $use = $node.getUse(alias);
+    g.file.default = `<?php\n\nnamespace TODO;\n\n/**\n * TODO\n */\nclass TODO\n{\n\n}\n`;
+    g.file.buildNode = function (self) {
+        function proxyWithStartEndFix(methodName, target) {
+            self[methodName] = function () {
+                const $fileItems = self.children[2];
+                const $firstItem = _.first($fileItems.children);
+                const $lastItem = _.last($fileItems.children);
+                const r = target()[methodName].apply(this, arguments);
+                if (arguments[0] === undefined) return r;
 
-            if (use.delete) {
-                if ($use) $use.findParent(g.fileItems).remove($use);
-            } else {
-                if ($use) return;
-                const aliasStr = (alias === className ? "" : ` as ${alias}`);
-                $node.findOne(g.fileItems).add(`use ${use.name.replace(/^\\+/, "")}${aliasStr};`);
-            }
-        };
+                if ($fileItems.children.length) {
+                    if ($firstItem !== _.first($fileItems.children)) $fileItems.prev.text(`\n\n`);
+                } else {
+                    $fileItems.prev.text(``);
+                }
 
-        $node.set = function (data) {
-            if (data.namespace !== undefined) $node.namespace(data.namespace);
-            if (data.use !== undefined) {
-                _.each(data.use, use => $node.setUse(use));
-            }
+                if ($lastItem !== _.last($fileItems.children)) $fileItems.next.text(`\n`);
+                return self;
+            };
+        }
 
-            const $class = $node.getClass();
-            $class.set(data);
-        };
+        function proxyGet(methodName, target) {
+            self[methodName] = function () {
+                return target()[methodName].apply(this, arguments);
+            };
+        }
+
+        proxyWithStartEndFix("namespace", () => self.children[2]);
+        proxyGet("getUses", () => self.children[2]);
+        proxyWithStartEndFix("insertUse", () => self.children[2]);
+        proxyWithStartEndFix("removeUse", () => self.children[2]);
+
+        proxyWithStartEndFix("class", () => self.children[2]);
     };
-    g.file.default = `<?php
-
-namespace TODO;
-
-/**
- * TODO
- */
-class TODO
-{
-
-}
-`;
 };

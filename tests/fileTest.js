@@ -6,7 +6,7 @@ const g = require(__dirname + "/../index.js").grammar;
 const parser = new Parser();
 
 describe('file', function () {
-    it("pass", function() {
+    it("pass", function () {
         parser.parse(g.file, `<?php `);
         parser.parse(g.file, `<?php /** Test */ ?>`);
         parser.parse(g.file, `<?php use Test; ?>`);
@@ -18,4 +18,88 @@ describe('file', function () {
         assert.throws(() => parser.parse(g.file, ``));
     });
 
+    describe('namespace', function () {
+        it("get empty", function () {
+            const $file = parser.parse(g.file, `<?php`);
+            assert.equal($file.namespace(), null);
+        });
+        it("get", function () {
+            const $file = parser.parse(g.file, `<?php namespace Foo;`);
+            assert.equal($file.namespace(), "Foo");
+        });
+        it("set", function () {
+            const $file = parser.parse(g.file, `<?php`);
+            $file.namespace("Foo");
+            assert.equal($file.text(), `<?php\n\nnamespace Foo;\n`);
+        });
+        it("remove", function () {
+            const $file = parser.parse(g.file, `<?php namespace Test;`);
+            $file.namespace(null);
+            assert.equal($file.text(), `<?php\n`);
+        });
+    });
+
+    describe('use', function () {
+        it("get all", function () {
+            const $file = parser.parse(g.file, `<?php use Foo; use Bar as Plop;`);
+            const $uses = $file.getUses();
+            assert.equal($uses.length, 2);
+            assert.equal($uses[0].fqn(), "Foo");
+            assert.equal($uses[1].alias(), "Plop");
+        });
+
+        it("insert from empty", () => {
+            const $file = parser.parse(g.file, `<?php`);
+            const $use = parser.parse(g.use, `use Test;`);
+            $file.insertUse($use);
+            assert.equal($file.text(), `<?php\n\nuse Test;\n`);
+        });
+
+        it("remove first", () => {
+            const $file = parser.parse(g.file, `<?php use Test; use Plop;`);
+            const $use = $file.getUses()[0];
+            $file.removeUse($use);
+            assert.equal($file.text(), `<?php\n\nuse Plop;`);
+        });
+
+        it("remove last", () => {
+            const $file = parser.parse(g.file, `<?php use Test; use Plop;`);
+            const $use = $file.getUses()[1];
+            $file.removeUse($use);
+            assert.equal($file.text(), `<?php use Test;\n`);
+        });
+
+        it("remove all", () => {
+            const $file = parser.parse(g.file, `<?php use Test;`);
+            const $use = $file.getUses()[0];
+            $file.removeUse($use);
+            assert.equal($file.text(), `<?php\n`);
+        });
+    });
+
+    describe('class', function () {
+        it("get null", function () {
+            const $file = parser.parse(g.file, `<?php`);
+            const $class = $file.class();
+            assert.equal($class, null);
+        });
+        it("get", function () {
+            const $file = parser.parse(g.file, `<?php namespace Foo; /** Plop */interface Foo{}`);
+            const $class = $file.class();
+            assert.equal($class.kind(), "interface");
+        });
+        it("set", function () {
+            const $file = parser.parse(g.file, `<?php namespace Foo;`);
+            const $class = parser.parse(g.class, `/** Foo */class Test { use Test; use Plop; }`);
+            $file.class($class);
+            assert.equal($file.text(), `<?php namespace Foo;\n\n/** Foo */class Test { use Test; use Plop; }\n`);
+            assert.equal($file.class().desc(), `Foo`);
+        });
+        it("remove", function () {
+            const $file = parser.parse(g.file, `<?php namespace Foo; class Test { use Test; use Plop; }`);
+            $file.class(null);
+            assert.equal($file.text(), `<?php namespace Foo; `);
+        });
+    });
 });
+

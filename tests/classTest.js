@@ -156,11 +156,10 @@ describe('class', function () {
 
     describe('use', function () {
         it("get all", () => {
-            const $class = parser.parse(g.class, `class Test { use Foo as Bar; use Plop; }`);
+            const $class = parser.parse(g.class, `class Test { use Foo; use Plop; }`);
             const $uses = $class.getUses();
             assert.equal($uses.length, 2);
             assert.equal($uses[0].fqn(), "Foo");
-            assert.equal($uses[0].alias(), "Bar");
         });
 
         it("insert from empty", () => {
