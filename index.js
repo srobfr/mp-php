@@ -1,5 +1,3 @@
-const Parser = require("microparser").Parser;
-
 const g = {};
 
 g.INDENT = "    ";
@@ -13,6 +11,6 @@ require(__dirname + "/grammar/class.js")(g);
 require(__dirname + "/grammar/file.js")(g);
 
 module.exports = {
+    // Grammar & basic pseudo-DOM manipulation features
     grammar: g,
-    Parser: Parser
 };

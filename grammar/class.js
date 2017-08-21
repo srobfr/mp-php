@@ -1,6 +1,5 @@
 const _ = require("lodash");
 const {multiple, not, optional, optmul, or} = require("microparser").grammarHelpers;
-const {descHelper, longDescHelper} = require(__dirname + "/../helpers.js");
 
 module.exports = function (g) {
     g.classUse = [
