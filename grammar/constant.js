@@ -6,11 +6,16 @@ module.exports = function (g) {
     g.constant = [g.optDoc, "const", g.w, g.constantIdent, g.defaultValue, g.ow, g.semicolon];
     g.constant.default = "const TODO = null;";
     g.constant.buildNode = function (self) {
-        self.desc = (desc) => {
-            const $optDoc = self.children[0];
-            const r = $optDoc.desc(desc);
-            return (desc === undefined ? r : self);
-        };
+        function proxy(methodName, target) {
+            self[methodName] = function () {
+                const r = target()[methodName].apply(this, arguments);
+                return (arguments[0] === undefined ? r : self);
+            };
+        }
+
+        proxy("desc", () => self.children[0]);
+        proxy("longDesc", () => self.children[0]);
+
         self.name = (name) => {
             const $constantIdent = self.children[3];
             const r = $constantIdent.text(name);
@@ -21,5 +26,6 @@ module.exports = function (g) {
             const r = $staticExpr.text(value);
             return (value === undefined ? r : self);
         };
+
     };
 };

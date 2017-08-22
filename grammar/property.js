@@ -46,6 +46,7 @@ module.exports = function(g) {
     };
 
     g.property = [g.optDoc, g.propertyMarkers, g.variable, g.optDefaultValue, g.ow, g.semicolon];
+    g.property.default = "$todo;";
     g.property.buildNode = function(self) {
         function proxy(methodName, target) {
             self[methodName] = function() {
@@ -64,6 +65,4 @@ module.exports = function(g) {
         proxy("name", () => self.children[2]);
         proxy("value", () => self.children[3]);
     };
-
-    // TODO
 };

@@ -69,6 +69,7 @@ module.exports = function (g) {
         g.variable,
         g.optDefaultValue
     ];
+    g.funcArg.default = "$todo";
     g.funcArg.buildNode = function (self) {
         self.name = function (name) {
             const $variable = self.children[2];
