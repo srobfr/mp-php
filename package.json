@@ -15,6 +15,6 @@
     "nyc": "^11.1.0"
   },
   "scripts": {
-    "test": "mocha --recursive tests"
+    "test": "mocha tests/all.js"
   }
 }

@@ -539,6 +539,17 @@ public function foo();`);
  */
 public function foo();`);
         });
+        it("set2", () => {
+            const $method = parser.parse(g.method, `/**
+            * @return string
+            */
+            public function foo();`);
+            $method.type("TODO");
+            assert.equal($method.text(), `/**
+            * @return TODO
+            */
+            public function foo();`);
+        });
         it("set null", () => {
             const $method = parser.parse(g.method, `/**
  * @return TODO

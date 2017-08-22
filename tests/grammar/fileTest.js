@@ -5,6 +5,45 @@ const g = require(__dirname + "/../../index.js").grammar;
 
 const parser = new Parser();
 
+describe('use', function () {
+    describe('fqn', function () {
+        it("get", function () {
+            const $use = parser.parse(g.use, `use Test;`);
+            assert.equal($use.fqn(), "Test");
+        });
+        it("set", function () {
+            const $use = parser.parse(g.use, `use Test;`);
+            $use.fqn("Foo");
+            assert.equal($use.text(), `use Foo;`);
+        });
+    });
+    describe('alias', function () {
+        it("get", function () {
+            const $use = parser.parse(g.use, `use Test as Plop;`);
+            assert.equal($use.alias(), "Plop");
+        });
+        it("get null", function () {
+            const $use = parser.parse(g.use, `use Test;`);
+            assert.equal($use.alias(), null);
+        });
+        it("set from empty", function () {
+            const $use = parser.parse(g.use, `use Test;`);
+            $use.alias("Foo");
+            assert.equal($use.text(), `use Test as Foo;`);
+        });
+        it("set", function () {
+            const $use = parser.parse(g.use, `use Test as Plop;`);
+            $use.alias("Foo");
+            assert.equal($use.text(), `use Test as Foo;`);
+        });
+        it("remove", function () {
+            const $use = parser.parse(g.use, `use Test as Plop;`);
+            $use.alias(null);
+            assert.equal($use.text(), `use Test;`);
+        });
+    });
+});
+
 describe('file', function () {
     it("pass", function () {
         parser.parse(g.file, `<?php `);
@@ -53,6 +92,12 @@ describe('file', function () {
             const $use = parser.parse(g.use, `use Test;`);
             $file.insertUse($use);
             assert.equal($file.text(), `<?php\n\nuse Test;\n`);
+            const $use2 = parser.parse(g.use, `use Plop;`);
+            $file.insertUse($use2);
+            assert.equal($file.text(), `<?php\n\nuse Plop;\nuse Test;\n`);
+            const $use3 = parser.parse(g.use, `use Zzz;`);
+            $file.insertUse($use3);
+            assert.equal($file.text(), `<?php\n\nuse Plop;\nuse Test;\nuse Zzz;\n`);
         });
 
         it("remove first", () => {

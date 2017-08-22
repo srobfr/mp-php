@@ -8,12 +8,12 @@ module.exports = function (g) {
 
     g.require = [/^(?:require|include)(?:_once)?/, g.ow, (/^[^;]+/), g.semicolon];
 
-    g.useAliasBlock = optional([g.w, "as", g.w, g.ident]);
+    g.useAliasBlock = [g.w, "as", g.w, g.ident];
     g.use = [
         g.optDoc,
         "use", g.w,
         g.fqn,
-        g.useAliasBlock,
+        optional(g.useAliasBlock),
         g.ow, g.semicolon
     ];
     g.use.default = "use TODO;";
@@ -25,14 +25,15 @@ module.exports = function (g) {
         };
         self.alias = function (alias) {
             let $optAliasBlock = self.children[4];
-            if (alias === undefined) return $optAliasBlock ? $optAliasBlock.findOneByGrammar(g.ident).text() : null;
+            let $aliasBlock = $optAliasBlock.children[0];
+            if (alias === undefined) return $aliasBlock ? $aliasBlock.findOneByGrammar(g.ident).text() : null;
             if (alias === null) {
                 $optAliasBlock.empty();
             } else {
                 if ($optAliasBlock.children.length === 0) {
                     $optAliasBlock.text(` as ${alias}`);
                 } else {
-                    $optAliasBlock.findOneByGrammar(g.ident).text(alias);
+                    $aliasBlock.findOneByGrammar(g.ident).text(alias);
                 }
             }
 
@@ -72,6 +73,15 @@ module.exports = function (g) {
             const $classBodyItem = self.parser.parse(g.classBodyItem);
             $classBodyItem.children[0].replaceWith($item);
             self.insert($classBodyItem, $previousNode);
+
+            // Fix separators
+            if ($classBodyItem.prev && $classBodyItem.prev.prev.grammar === $classBodyItem.grammar) {
+                $classBodyItem.prev.text(`\n`);
+            }
+            if ($classBodyItem.next && $classBodyItem.next.next.grammar === $classBodyItem.grammar) {
+                $classBodyItem.next.text(`\n`);
+            }
+
             return self;
         }
 
