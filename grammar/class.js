@@ -51,13 +51,6 @@ module.exports = function (g) {
     g.classBodyEnd = [g.owOrComments];
     g.classBodyEnd.default = "\n";
     g.classBodyEnd.tag = "classBodyEnd";
-    g.classBodyEnd.buildNode = function (self) {
-        self.fix = function () {
-            self.text(g.classBodyEnd.default);
-            return self;
-        };
-    };
-
 
     g.classBody = ["{", g.classBodyStart, g.classBodyItems, g.classBodyEnd, "}"];
     g.classBody.indent = g.INDENT;

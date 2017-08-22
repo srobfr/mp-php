@@ -599,6 +599,18 @@ describe('optDoc', function () {
             $optDoc.insertAnnotation($docAnnotation);
             assert.equal($optDoc.text(), `/**\n * @author Foo Bar\n */\n`);
         });
+        it("find by name", function () {
+            const $optDoc = parser.parse(g.optDoc, `/**\n * @test\n */`);
+            const $docAnnotationList = $optDoc.findAnnotationsByName("test");
+            assert.equal($docAnnotationList.length, 1);
+            assert.equal($docAnnotationList[0].name(), "test");
+        });
+        it("remove", function () {
+            const $optDoc = parser.parse(g.optDoc, `/**\n * @test\n */`);
+            const $docAnnotationList = $optDoc.findAnnotationsByName("test");
+            $optDoc.removeAnnotation($docAnnotationList[0]);
+            assert.equal($optDoc.text(), ``);
+        });
     });
 });
 
