@@ -40,10 +40,11 @@ module.exports = function (g) {
     ]);
     g.docContentUntilNextAnnotationOrEnd.buildNode = function (self) {
         self.textWithoutLineStarts = function (text) {
+            const indent = self.getIndent();
             if (text === undefined) return self.text().replace(/\n[ \t]*\*(?!\/) ?/g, "\n");
             const newText = text.split(/\n/)
                 .map((l, i) => (l.trim() === "" ? "" : (i === 0 ? "" : " ") + l))
-                .join(`\n *`);
+                .join(`\n${indent} *`);
             self.text(newText);
             return self;
         };
@@ -74,7 +75,8 @@ module.exports = function (g) {
                 if ($docDescBlock) self.empty();
             } else {
                 if (!$docDescBlock) {
-                    self.text(`\n * TODO`);
+                    const indent = self.getIndent();
+                    self.text(`\n${indent} * TODO`);
                     $docDescBlock = self.children[0];
                 }
 
@@ -107,7 +109,8 @@ module.exports = function (g) {
                 if ($docLongDescBlock) self.empty();
             } else {
                 if (!$docLongDescBlock) {
-                    self.text(`\n *\n * TODO`);
+                    const indent = self.getIndent();
+                    self.text(`\n${indent} *\n${indent} * TODO`);
                     $docLongDescBlock = self.children[0];
                 }
 
@@ -135,7 +138,7 @@ module.exports = function (g) {
     g.docAnnotationValue.buildNode = function (self) {
         self.value = function (value) {
             let $docAnnotationValue = self.children[0];
-            if (value === undefined) return $docAnnotationValue ? $docAnnotationValue.textWithoutLineStarts() : null;
+            if (value === undefined) return $docAnnotationValue ? $docAnnotationValue.textWithoutLineStarts().trim() : null;
             if (value === null) {
                 if ($docAnnotationValue) self.empty();
             } else {
@@ -153,7 +156,7 @@ module.exports = function (g) {
     };
     // docAnnotation
     g.docAnnotation = [/^ */, g.docAnnotationName, g.docAnnotationValue];
-    g.docAnnotation.default = "@todo";
+    g.docAnnotation.default = " @todo";
     g.docAnnotation.buildNode = function (self) {
         self.name = (name => {
             const r = self.children[1].name(name);
@@ -182,12 +185,13 @@ module.exports = function (g) {
             self.insert($docAnnotationBlock, $previousNode);
 
             // Fix separators
-            if ($docAnnotationBlock.prev && $docAnnotationBlock.prev.children[1].name() === $docAnnotation.name()) $docAnnotationBlock.children[0].text("\n *");
-            else $docAnnotationBlock.children[0].text("\n *\n *");
+            const indent = self.getIndent();
+            if ($docAnnotationBlock.prev && $docAnnotationBlock.prev.children[1].name() === $docAnnotation.name()) $docAnnotationBlock.children[0].text(`\n${indent} *`);
+            else $docAnnotationBlock.children[0].text(`\n${indent} *\n${indent} *`);
 
             if ($docAnnotationBlock.next) {
                 const name = $docAnnotationBlock.next.children[1].name();
-                $docAnnotationBlock.next.children[0].text(name === $docAnnotation.name() ? "\n *" : "\n *\n *");
+                $docAnnotationBlock.next.children[0].text(name === $docAnnotation.name() ? `\n${indent} *` : `\n${indent} *\n${indent} *`);
             }
 
             return self;
@@ -197,9 +201,10 @@ module.exports = function (g) {
             $docAnnotationBlock.remove();
 
             // Fix separators
+            const indent = self.getIndent();
             if ($docAnnotationBlock.next) {
                 const name = $docAnnotationBlock.next.children[1].name();
-                $docAnnotationBlock.next.children[0].text(name === ($docAnnotationBlock.prev ? $docAnnotationBlock.prev.children[1].name() : null) ? "\n *" : "\n *\n *");
+                $docAnnotationBlock.next.children[0].text(name === ($docAnnotationBlock.prev ? $docAnnotationBlock.prev.children[1].name() : null) ? `\n${indent} *` : `\n${indent} *\n${indent} *`);
             }
 
             return self;
@@ -253,12 +258,13 @@ module.exports = function (g) {
             const isRemoving = ($node.children.length === 0);
             let $next = $node.next;
             while ($next.children.length === 0) $next = $next.next;
+            const indent = self.getIndent();
             if ($next.grammar === g.docEndBlock) {
-                if (isRemoving && $node.grammar === g.docOptDescBlock) $next.text(`\n *\n */`); // We are removing the first block.
-                else $next.text(`\n */`);
+                if (isRemoving && $node.grammar === g.docOptDescBlock) $next.text(`\n${indent} *\n${indent} */`); // We are removing the first block.
+                else $next.text(`\n${indent} */`);
             } else {
                 const $docLineStartBlock = $next.findOneByGrammar(g.docLineStartBlock);
-                $docLineStartBlock.text(`\n *`);
+                $docLineStartBlock.text(`\n${indent} *`);
             }
         }
 
@@ -295,7 +301,8 @@ module.exports = function (g) {
 
             if (self.children[1].children.length === 0 && self.children[2].children.length === 0) {
                 // No desc or longDesc
-                $docAnnotations.children[0].children[0].text("\n *");
+                const indent = self.getIndent();
+                $docAnnotations.children[0].children[0].text(`\n${indent} *`);
             }
 
             fixFirstNonEmptyNodeSeparator($docAnnotations);
@@ -311,6 +318,7 @@ module.exports = function (g) {
 
     // doc
     g.doc = or(g.docMonoline, g.docMultiline);
+    g.doc.default = `/**\n * TODO\n */`;
     g.doc.buildNode = function (self) {
         self.convertToMultilineDoc = function () {
             if (self.children[0].grammar === g.docMonoline) {
@@ -361,6 +369,12 @@ module.exports = function (g) {
             if ($doc && !$doc.text().match(/[^\/\* \t\r\n]/)) self.empty();
         }
 
+        function createDoc() {
+            const indent = self.getIndent();
+            self.text(`/**\n${indent} *\n${indent} */\n${indent}`);
+            return self.children[0].children[0];
+        }
+
         self.desc = function (desc) {
             let $doc = (self.children[0] ? self.children[0].children[0] : null);
             if (desc === undefined) return $doc ? $doc.desc() : null;
@@ -368,11 +382,7 @@ module.exports = function (g) {
                 if ($doc) $doc.desc(desc);
                 removeIfEmpty();
             } else {
-                if (!$doc) {
-                    self.text(`/**\n *\n */\n`);
-                    $doc = self.children[0].children[0];
-                }
-
+                if (!$doc) $doc = createDoc();
                 $doc.desc(desc);
             }
 
@@ -386,11 +396,7 @@ module.exports = function (g) {
                 if ($doc) $doc.longDesc(longDesc);
                 removeIfEmpty();
             } else {
-                if (!$doc) {
-                    self.text(`/**\n *\n */\n`);
-                    $doc = self.children[0].children[0];
-                }
-
+                if (!$doc) $doc = createDoc();
                 $doc.longDesc(longDesc);
             }
 
@@ -409,10 +415,7 @@ module.exports = function (g) {
 
         self.insertAnnotation = function ($docAnnotation, $previousNode) {
             let $doc = (self.children[0] ? self.children[0].children[0] : null);
-            if (!$doc) {
-                self.text(`/**\n *\n */\n`);
-                $doc = self.children[0].children[0];
-            }
+            if (!$doc) $doc = createDoc();
             $doc.insertAnnotation($docAnnotation, $previousNode);
             return self;
         };

@@ -17,7 +17,8 @@ describe('method', function () {
         final: true,
         body: `// TODO`,
         args: [
-            {name: "foo", byReference: false, type: "Foo", value: null}
+            {name: "foo", byReference: false, type: "Foo", value: null},
+            {name: "bar", byReference: true, type: null, value: "42"}
         ],
     };
 
@@ -26,7 +27,7 @@ describe('method', function () {
  *
  * Foo
  */
-final abstract static protected function foo(Foo $foo)
+final abstract static protected function foo(Foo $foo, &$bar = 42)
 {
     // TODO
 }`;

@@ -89,7 +89,7 @@ describe('docAnnotation', function () {
     describe('value', function () {
         it("get", function () {
             const $annotation = parser.parse(g.docAnnotation, `@foo Test\n      *   Bar`);
-            assert.equal($annotation.value(), " Test\n  Bar");
+            assert.equal($annotation.value(), "Test\n  Bar");
         });
         it("set 1", function () {
             const $annotation = parser.parse(g.docAnnotation, `@foo Test`);

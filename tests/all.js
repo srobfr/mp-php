@@ -11,4 +11,6 @@ describe('All tests', function () {
     require(__dirname + "/model/constantTest.js");
     require(__dirname + "/model/propertyTest.js");
     require(__dirname + "/model/methodTest.js");
+    require(__dirname + "/model/docTest.js");
+    require(__dirname + "/model/classTest.js");
 });

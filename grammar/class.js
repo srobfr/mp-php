@@ -29,6 +29,7 @@ module.exports = function (g) {
         g.classBodyItem,
         g.classBodyItemsSeparator
     );
+    g.classBodyItems.tag = "classBodyItems";
     g.classBodyItems.order = [
         g.classUse,
         g.constant,
@@ -53,6 +54,7 @@ module.exports = function (g) {
     g.classBodyEnd.tag = "classBodyEnd";
 
     g.classBody = ["{", g.classBodyStart, g.classBodyItems, g.classBodyEnd, "}"];
+    g.classBody.tag = "classBody";
     g.classBody.indent = g.INDENT;
     g.classBody.buildNode = function (self) {
         self.fixStart = function () {
@@ -69,6 +71,7 @@ module.exports = function (g) {
 
         function insertItem($item, $previousNode) {
             const $classBodyItem = self.parser.parse(g.classBodyItem);
+            $classBodyItem.parent = self.children[2];
             $classBodyItem.children[0].replaceWith($item);
             self.children[2].insert($classBodyItem, $previousNode);
             if (!$classBodyItem.prev) self.fixStart();
@@ -86,6 +89,12 @@ module.exports = function (g) {
 
         self.removeConstant = removeItem;
         self.insertConstant = insertItem;
+
+        self.removeProperty = removeItem;
+        self.insertProperty = insertItem;
+
+        self.removeMethod = removeItem;
+        self.insertMethod = insertItem;
     };
 
     g.className = [g.ident];
@@ -135,7 +144,7 @@ module.exports = function (g) {
     g.implementsValue = [g.fqn];
     g.implementsValue.tag = "implementsValue";
     g.implementsValue.buildNode = function (self) {
-        self.name = self.text;
+        self.name = (name) => self.text(name);
     };
 
     g.implementsValues = multiple(g.implementsValue, g.implementsValuesSeparator);
@@ -212,6 +221,7 @@ module.exports = function (g) {
         g.implementsExtends,
         g.ow, g.classBody
     ];
+    g.class.tag = "class";
     g.class.default = `class TODO\n{\n}`;
     g.class.buildNode = function (self) {
         function proxy(methodName, target) {
@@ -249,19 +259,19 @@ module.exports = function (g) {
         proxySet("removeImplementsValue", () => self.children[5]);
 
         proxyGet("getUses", () => self.children[7].children[2]);
-        proxyGet("insertUse", () => self.children[7]);
-        proxyGet("removeUse", () => self.children[7]);
+        proxySet("insertUse", () => self.children[7]);
+        proxySet("removeUse", () => self.children[7]);
 
         proxyGet("getConstants", () => self.children[7].children[2]);
-        proxyGet("insertConstant", () => self.children[7]);
-        proxyGet("removeConstant", () => self.children[7]);
+        proxySet("insertConstant", () => self.children[7]);
+        proxySet("removeConstant", () => self.children[7]);
 
         proxyGet("getProperties", () => self.children[7].children[2]);
-        proxyGet("insertProperty", () => self.children[7]);
-        proxyGet("removeProperty", () => self.children[7]);
+        proxySet("insertProperty", () => self.children[7]);
+        proxySet("removeProperty", () => self.children[7]);
 
         proxyGet("getMethods", () => self.children[7].children[2]);
-        proxyGet("insertMethod", () => self.children[7]);
-        proxyGet("removeMethod", () => self.children[7]);
+        proxySet("insertMethod", () => self.children[7]);
+        proxySet("removeMethod", () => self.children[7]);
     };
 };

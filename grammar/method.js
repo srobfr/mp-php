@@ -128,9 +128,9 @@ module.exports = function (g) {
             if (body === null) {
                 if ($bracesBlock) self.text(";");
             } else {
-                const indent = self.getIndent() + g.INDENT;
-                const indentedBody = body.split("\n").map(l => `${indent}${l}`).join("\n");
-                self.text(`\n{\n${indentedBody}\n}`);
+                const indent = self.getIndent();
+                const indentedBody = body.split("\n").map(l => `${indent + g.INDENT}${l}`).join("\n");
+                self.text(`\n${indent}{\n${indentedBody}\n${indent}}`);
             }
             return self;
         };

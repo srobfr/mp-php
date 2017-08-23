@@ -22,6 +22,7 @@ module.exports = function (g) {
 
     // Fully Qualified Name
     g.fqn = [g.optFirstBackslash, multiple(g.ident, "\\")];
+    g.fqn.default = "Todo";
 
     g.keywords = or("null", "true", "false");
 

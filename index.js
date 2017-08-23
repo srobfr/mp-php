@@ -17,6 +17,8 @@ require(__dirname + "/grammar/file.js")(g);
 require(__dirname + "/model/constant.js")(g, helpers);
 require(__dirname + "/model/property.js")(g, helpers);
 require(__dirname + "/model/method.js")(g, helpers);
+require(__dirname + "/model/doc.js")(g, helpers);
+require(__dirname + "/model/class.js")(g, helpers);
 
 const Parser = require("microparser").Parser;
 const parser = new Parser();
