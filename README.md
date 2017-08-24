@@ -19,7 +19,7 @@ Just use the standard npm command :
 ## Usage
 
 This project is currently under active development, the API is subject to heavy changes.
-See the tests (`test/*Test.js`) for up-to-date examples of use.
+See the tests (`tests/*/*.js`) for up-to-date examples of use.
 
 ## License
 

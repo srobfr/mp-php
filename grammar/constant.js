@@ -26,6 +26,5 @@ module.exports = function (g) {
             const r = $staticExpr.text(value);
             return (value === undefined ? r : self);
         };
-
     };
 };
