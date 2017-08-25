@@ -10,6 +10,9 @@ describe('method', function () {
     const model = {
         desc: "Test",
         longDesc: "Foo",
+        annotations: [
+            {name: "foo", value: "bar"},
+        ],
         name: "foo",
         visibility: "protected",
         abstract: true,
@@ -26,6 +29,8 @@ describe('method', function () {
  * Test
  *
  * Foo
+ *
+ * @foo bar
  */
 final abstract static protected function foo(Foo $foo, &$bar = 42)
 {

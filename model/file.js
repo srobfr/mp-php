@@ -24,7 +24,8 @@ module.exports = function (g, helpers) {
 
     extendBuildNodeFunc(g.file, function (self) {
         const classModelKeys = [
-            "desc", "longDesc", "abstract", "final", "kind", "name", "extends",
+            "desc", "longDesc", "annotations",
+            "abstract", "final", "kind", "name", "extends",
             "properties", "implements", "constants", "methods"
         ];
 
