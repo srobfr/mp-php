@@ -38,6 +38,16 @@ module.exports = function (g) {
         not(or(g.docEndMarker, /^ *@/)),
         g.docLineContent,
     ]);
+
+    const fullLineRe = `( *[^ @\\n].*?(?=\\*\\/|\\n))`;
+    const emptyLine = `([ \\t]*[\\r\\n][ \\t]*\\*)`;
+    const withPrefixRe = `${fullLineRe}(${emptyLine}+${fullLineRe})*`;
+    const withSuffixRe = `${fullLineRe}?(${emptyLine}+${fullLineRe})+`;
+    const re = `^(${withPrefixRe}|${withSuffixRe})`;
+
+    console.log(fullLineRe); // TODO
+
+    // g.docContentUntilNextAnnotationOrEnd = [new RegExp(re)];
     g.docContentUntilNextAnnotationOrEnd.buildNode = function (self) {
         self.textWithoutLineStarts = function (text) {
             const indent = self.getIndent();
@@ -51,7 +61,7 @@ module.exports = function (g) {
     };
 
     // docEndBlock
-    g.docEndBlock = [optional(g.docLineStartBlock), g.docNl, g.docIndent, g.docEndMarker];
+    g.docEndBlock = [g.docSeparator, g.docNl, g.docIndent, g.docEndMarker];
     g.docEndBlock.tag = "docEndBlock";
 
     // docDesc

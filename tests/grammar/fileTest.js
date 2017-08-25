@@ -1,5 +1,6 @@
 const _ = require("lodash");
 const assert = require('assert');
+const fs = require('fs');
 const Parser = require("microparser").Parser;
 const g = require(__dirname + "/../../index.js").grammar;
 
@@ -50,7 +51,10 @@ describe('file', function () {
         parser.parse(g.file, `<?php /** Test */ ?>`);
         parser.parse(g.file, `<?php use Test; ?>`);
         parser.parse(g.file, `<?php class Test {}`);
-        const $f = parser.parse(g.file, `<?php /** Test */ require __DIR__."/Foo.php"; /** Test */ class Test {}`);
+        parser.parse(g.file, `<?php /** Test */ require __DIR__."/Foo.php"; /** Test */ class Test {}`);
+
+        // Performances test
+        const $f = parser.parse(g.file, fs.readFileSync(__dirname + "/corpus/Foo.php", {encoding: "UTF-8"}));
         console.log($f.xml());
     });
     it("fail", function () {
