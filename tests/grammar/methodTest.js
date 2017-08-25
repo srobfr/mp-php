@@ -466,6 +466,27 @@ describe('method', function () {
         });
     });
 
+    describe('annotations', function () {
+        it("get", () => {
+            const $method = parser.parse(g.method, `/**
+             * @foo bar
+             */
+            public function foo();`);
+            const $annotations = $method.getAnnotations();
+            assert.equal($annotations.length, 1);
+            assert.equal($annotations[0].name(), "foo");
+        });
+        it("insert", () => {
+            const $method = parser.parse(g.method, `public function foo();`);
+            const $annotation = $method.parser.parse(g.docAnnotation, ` @foo bar`);
+            $method.insertAnnotation($annotation);
+            assert.equal(`/**
+ * @foo bar
+ */
+public function foo();`, $method.text());
+        });
+    });
+
     describe('desc', function () {
         it("get null", () => {
             const $method = parser.parse(g.method, `public function foo();`);
@@ -591,4 +612,5 @@ public function foo();`, $method.text());
             assert($method.removeArg !== undefined);
         });
     });
-});
+})
+;

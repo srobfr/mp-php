@@ -25,6 +25,27 @@ describe('class', function () {
         });
     });
 
+    describe('annotations', function () {
+        it("get", () => {
+            const $class = parser.parse(g.class, `/**
+             * @foo bar
+             */
+            class Foo {}`);
+            const $annotations = $class.getAnnotations();
+            assert.equal($annotations.length, 1);
+            assert.equal($annotations[0].name(), "foo");
+        });
+        it("insert", () => {
+            const $class = parser.parse(g.class, `class Foo {}`);
+            const $annotation = $class.parser.parse(g.docAnnotation, ` @foo bar`);
+            $class.insertAnnotation($annotation);
+            assert.equal(`/**
+ * @foo bar
+ */
+class Foo {}`, $class.text());
+        });
+    });
+
     describe('name', function () {
         it("get", function () {
             const $class = parser.parse(g.class, `class Test {}`);

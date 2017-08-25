@@ -246,6 +246,10 @@ module.exports = function (g) {
 
         proxy("desc", () => self.children[0]);
         proxy("longDesc", () => self.children[0]);
+        proxyGet("getAnnotations", () => self.children[0]);
+        proxyGet("findAnnotationByName", () => self.children[0]);
+        proxySet("insertAnnotation", () => self.children[0]);
+        proxySet("removeAnnotation", () => self.children[0]);
 
         proxy("abstract", () => self.children[1]);
         proxy("final", () => self.children[1]);

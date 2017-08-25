@@ -10,6 +10,9 @@ describe('class', function () {
     const model = {
         name: "Test",
         desc: "Test",
+        annotations: [
+            {name: "author", value: "Simon Robert <srob@srob.fr>"},
+        ],
         longDesc: "Foo\nBar",
         implements: [
             {name: "Bar"},
@@ -33,6 +36,7 @@ describe('class', function () {
             {
                 desc: "Test",
                 longDesc: "Foo",
+                annotations: [],
                 name: "foo",
                 visibility: "protected",
                 abstract: true,
@@ -52,6 +56,8 @@ describe('class', function () {
  *
  * Foo
  * Bar
+ *
+ * @author Simon Robert <srob@srob.fr>
  */
 final abstract interface Test extends AbstractTest implements Bar, Foo, Plop
 {

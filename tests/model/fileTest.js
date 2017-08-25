@@ -12,6 +12,9 @@ describe('file', function () {
         name: "Test",
         desc: "Test",
         longDesc: "Foo\nBar",
+        annotations: [
+            {name: "foo", value: null},
+        ],
         implements: [
             {name: "Bar"},
             {name: "Foo"},
@@ -37,6 +40,7 @@ describe('file', function () {
             {
                 desc: "Test",
                 longDesc: "Foo",
+                annotations: [],
                 name: "foo",
                 visibility: "protected",
                 abstract: true,
@@ -62,6 +66,8 @@ use Foo\\Bar as Plop;
  *
  * Foo
  * Bar
+ *
+ * @foo
  */
 final abstract interface Test extends AbstractTest implements Bar, Foo, Plop
 {

@@ -37,6 +37,21 @@ module.exports = function (g, helpers) {
             callIfDefined(model.desc, self.desc);
             callIfDefined(model.longDesc, self.longDesc);
 
+            if(model.annotations !== undefined) {
+                const $annotations = self.getAnnotations();
+                model.annotations.forEach(annotation => {
+                    let $annotation = _.find($annotations, $annotation => $annotation.name() === getName(annotation));
+                    if (isToDelete(annotation)) {
+                        if ($annotation) self.removeAnnotation($annotation);
+                    } else {
+                        const create = (!$annotation);
+                        if (create) $annotation = self.parser.parse(g.docAnnotation);
+                        $annotation.setModel(annotation);
+                        if (create) self.insertAnnotation($annotation);
+                    }
+                });
+            }
+
             callIfDefined(model.abstract, self.abstract);
             callIfDefined(model.final, self.final);
 
@@ -130,6 +145,7 @@ module.exports = function (g, helpers) {
             return {
                 desc: self.desc(),
                 longDesc: self.longDesc(),
+                annotations: self.getAnnotations().map($docAnnotation => $docAnnotation.getModel()),
                 abstract: self.abstract(),
                 final: self.final(),
                 kind: self.kind(),

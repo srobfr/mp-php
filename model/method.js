@@ -51,12 +51,28 @@ module.exports = function (g, helpers) {
                     }
                 });
             }
+
+            if(model.annotations !== undefined) {
+                const $annotations = self.getAnnotations();
+                model.annotations.forEach(annotation => {
+                    let $annotation = _.find($annotations, $annotation => $annotation.name() === getName(annotation));
+                    if (isToDelete(annotation)) {
+                        if ($annotation) self.removeAnnotation($annotation);
+                    } else {
+                        const create = (!$annotation);
+                        if (create) $annotation = self.parser.parse(g.docAnnotation);
+                        $annotation.setModel(annotation);
+                        if (create) self.insertAnnotation($annotation);
+                    }
+                });
+            }
         };
 
         self.getModel = function () {
             return {
                 desc: self.desc(),
                 longDesc: self.longDesc(),
+                annotations: self.getAnnotations().map($docAnnotation => $docAnnotation.getModel()),
                 name: self.name(),
                 visibility: self.visibility(),
                 abstract: self.abstract(),
