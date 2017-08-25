@@ -67,6 +67,7 @@ module.exports = function (g) {
 
     // docOptDescBlock
     g.docOptDescBlock = optional([g.docSeparator, g.docDesc]);
+    g.docOptDescBlock.tag = "docOptDescBlock";
     g.docOptDescBlock.buildNode = function (self) {
         self.desc = (desc) => {
             let $docDescBlock = self.children[0];
@@ -89,7 +90,6 @@ module.exports = function (g) {
 
     // docLongDesc
     g.docLongDesc = [not(/^ *@/), g.docContentUntilNextAnnotationOrEnd];
-    g.docLongDesc.tag = "docLongDesc";
     g.docLongDesc.buildNode = function (self) {
         self.longDesc = (longDesc) => {
             const $docContentUntilNextAnnotationOrEnd = self.children[1];
@@ -101,6 +101,7 @@ module.exports = function (g) {
 
     // docOptLongDescBlock
     g.docOptLongDescBlock = optional([g.docSeparator, g.docLongDesc]);
+    g.docOptLongDescBlock.tag = "docOptLongDescBlock";
     g.docOptLongDescBlock.buildNode = function (self) {
         self.longDesc = (longDesc) => {
             let $docLongDescBlock = self.children[0];
@@ -175,6 +176,7 @@ module.exports = function (g) {
     // docAnnotations
     g.docAnnotations = optmul(g.docAnnotationBlock);
     g.docAnnotations.order = [($node => $node.findOneByGrammar(g.docAnnotation).text().trim())];
+    g.docAnnotations.tag = "docAnnotations";
     g.docAnnotations.buildNode = function (self) {
         self.getAnnotations = () => self.findByGrammar(g.docAnnotation);
         self.findAnnotationsByName = (name) => self.getAnnotations().filter(($docAnnotation) => $docAnnotation.name() === name);
@@ -251,28 +253,30 @@ module.exports = function (g) {
     ];
     g.docMultiline.buildNode = function (self) {
         /**
-         * Find the next non-empty node, and fix its separator block
-         * @param $node
+         * Fix the end block content.
          */
-        function fixFirstNonEmptyNodeSeparator($node) {
-            const isRemoving = ($node.children.length === 0);
-            let $next = $node.next;
-            while ($next.children.length === 0) $next = $next.next;
+        function fixSeparators() {
+            let prevIsEmpty = true;
+            let allEmpty = true;
             const indent = self.getIndent();
-            if ($next.grammar === g.docEndBlock) {
-                if (isRemoving && $node.grammar === g.docOptDescBlock) $next.text(`\n${indent} *\n${indent} */`); // We are removing the first block.
-                else $next.text(`\n${indent} */`);
-            } else {
-                const $docLineStartBlock = $next.findOneByGrammar(g.docLineStartBlock);
-                $docLineStartBlock.text(`\n${indent} *`);
-            }
+            _.each(_.map([1, 2, 3], (i => self.children[i])), ($node, i) => {
+                if ($node.children.length === 0) return;
+
+                allEmpty = false;
+                let sep = `\n${indent} *`;
+                if (!prevIsEmpty) sep += `\n${indent} *`;
+                $node.findOneByGrammar(g.docSeparator).text(sep);
+                prevIsEmpty = false;
+            });
+
+            self.children[4].text(allEmpty ? `\n${indent} *\n${indent} */` : `\n${indent} */`);
         }
 
         self.desc = function (desc) {
             const $docOptDescBlock = self.children[1];
             if (desc === undefined) return $docOptDescBlock.desc();
             $docOptDescBlock.desc(desc);
-            fixFirstNonEmptyNodeSeparator($docOptDescBlock);
+            fixSeparators();
             return self;
         };
 
@@ -280,16 +284,7 @@ module.exports = function (g) {
             const $docOptLongDescBlock = self.children[2];
             if (longDesc === undefined) return $docOptLongDescBlock.longDesc();
             $docOptLongDescBlock.longDesc(longDesc);
-            fixFirstNonEmptyNodeSeparator($docOptLongDescBlock);
-            return self;
-        };
-
-        self.indent = function (indent) {
-            if (indent === undefined) {
-                const $firstIndent = self.findOneByGrammar(g.docIndent);
-                return $firstIndent ? $firstIndent.text() : null;
-            }
-            _.each(self.findByGrammar(g.docIndent), ($docIndent => $docIndent.text(indent)));
+            fixSeparators();
             return self;
         };
 
@@ -298,20 +293,13 @@ module.exports = function (g) {
         self.insertAnnotation = function ($docAnnotation, $previousNode) {
             const $docAnnotations = self.children[3];
             $docAnnotations.insertAnnotation($docAnnotation, $previousNode);
-
-            if (self.children[1].children.length === 0 && self.children[2].children.length === 0) {
-                // No desc or longDesc
-                const indent = self.getIndent();
-                $docAnnotations.children[0].children[0].text(`\n${indent} *`);
-            }
-
-            fixFirstNonEmptyNodeSeparator($docAnnotations);
+            fixSeparators();
             return self;
         };
         self.removeAnnotation = function ($docAnnotation) {
             const $docAnnotations = self.children[3];
             $docAnnotations.removeAnnotation($docAnnotation);
-            fixFirstNonEmptyNodeSeparator($docAnnotations);
+            fixSeparators();
             return self;
         };
     };
@@ -346,12 +334,6 @@ module.exports = function (g) {
         self.longDesc = function (longDesc) {
             if (longDesc === undefined) return self.children[0].longDesc();
             self.children[0].longDesc(longDesc);
-            return self;
-        };
-
-        self.indent = function (indent) {
-            if (indent === undefined) return self.children[0].indent();
-            self.children[0].indent(indent);
             return self;
         };
 

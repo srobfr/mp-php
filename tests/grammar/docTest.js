@@ -270,32 +270,6 @@ describe('doc', function () {
         });
     });
 
-    describe('indent', function () {
-        it("get empty", function () {
-            const $doc = parser.parse(g.doc, `/**
- *
- */`);
-            assert.equal($doc.indent(), "");
-        });
-
-        it("get", function () {
-            const $doc = parser.parse(g.doc, `/**
-   *
-   */`);
-            assert.equal($doc.indent(), "  ");
-        });
-
-        it("set", function () {
-            const $doc = parser.parse(g.doc, `/**
-   *
-   */`);
-            $doc.indent("    ");
-            assert.equal($doc.text(), `/**
-     *
-     */`);
-        });
-    });
-
     describe('desc', function () {
         it("get empty", function () {
             const $doc = parser.parse(g.doc, `/**
@@ -415,6 +389,7 @@ describe('doc', function () {
             $doc.longDesc("Bar\n\nTest\n    Foo");
             assert.equal($doc.text(), `/**
  * Foo
+ *
  * Bar
  *
  * Test
@@ -514,6 +489,7 @@ describe('doc', function () {
             $doc.removeAnnotation($docAnnotation[0]);
             assert.equal($doc.text(), `/**
  * Foo
+ *
  * @foo
  *
  * @plop
@@ -533,6 +509,7 @@ describe('doc', function () {
             $doc.removeAnnotation($docAnnotation[0]);
             assert.equal($doc.text(), `/**
  * Foo
+ *
  * @foo
  * @bar
  */`);
@@ -574,7 +551,7 @@ describe('optDoc', function () {
         it("set from empty", function () {
             const $optDoc = parser.parse(g.optDoc, ``);
             $optDoc.longDesc("Foo");
-            assert.equal($optDoc.text(), `/**\n *\n * Foo\n */\n`);
+            assert.equal($optDoc.text(), `/**\n * Foo\n */\n`);
         });
         it("set empty", function () {
             const $optDoc = parser.parse(g.optDoc, `/**\n * Foo\n * Bar\n */\n`);
