@@ -55,8 +55,25 @@ module.exports = function(g) {
             };
         }
 
+        function proxyGet(methodName, target) {
+            self[methodName] = function () {
+                return target()[methodName].apply(this, arguments);
+            };
+        }
+
+        function proxySet(methodName, target) {
+            self[methodName] = function () {
+                target()[methodName].apply(this, arguments);
+                return self;
+            };
+        }
+
         proxy("desc", () => self.children[0]);
         proxy("longDesc", () => self.children[0]);
+        proxyGet("getAnnotations", () => self.children[0]);
+        proxyGet("findAnnotationByName", () => self.children[0]);
+        proxySet("insertAnnotation", () => self.children[0]);
+        proxySet("removeAnnotation", () => self.children[0]);
 
         proxy("visibility", () => self.children[1]);
         proxy("abstract", () => self.children[1]);

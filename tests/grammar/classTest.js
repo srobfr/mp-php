@@ -243,5 +243,10 @@ class Foo {}`, $class.text());
             assert.equal($methods.length, 1);
             assert.equal($methods[0].name(), "foo");
         });
+        it("find by name", () => {
+            const $class = parser.parse(g.class, `class Test { use Test; public function foo(); public function bar(); }`);
+            const $method = $class.findOneMethodByName("bar");
+            assert.equal($method.name(), "bar");
+        });
     });
 });

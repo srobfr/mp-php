@@ -125,9 +125,9 @@ module.exports = function (g, helpers) {
             }
 
             if (model.methods !== undefined) {
-                const $methods = self.getMethods();
                 model.methods.forEach(method => {
-                    let $method = _.find($methods, $method => $method.name() === getName(method));
+                    let $method = self.findOneMethodByName(getName(method));
+
                     if (isToDelete(method)) {
                         if ($method) self.removeMethod($method);
                     } else {

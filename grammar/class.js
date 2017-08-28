@@ -43,6 +43,7 @@ module.exports = function (g) {
         self.getConstants = () => self.findByGrammar(g.constant);
         self.getProperties = () => self.findByGrammar(g.property);
         self.getMethods = () => self.findByGrammar(g.method);
+        self.findOneMethodByName = (name => self.findOneByPredicate($node => $node.grammar === g.method && $node.name() === name));
     };
 
     g.classBodyStart = [g.owOrComments];
@@ -275,6 +276,7 @@ module.exports = function (g) {
         proxySet("removeProperty", () => self.children[7]);
 
         proxyGet("getMethods", () => self.children[7].children[2]);
+        proxyGet("findOneMethodByName", () => self.children[7].children[2]);
         proxySet("insertMethod", () => self.children[7]);
         proxySet("removeMethod", () => self.children[7]);
     };

@@ -10,6 +10,7 @@ describe('property', function () {
     const model = {
         desc: "Test",
         longDesc: "Foo\nBar",
+        annotations: [],
         name: "foo",
         value: "'fooBar'",
         visibility: "protected",

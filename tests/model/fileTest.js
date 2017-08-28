@@ -34,7 +34,7 @@ describe('file', function () {
             {name: "FOO", value: "42", desc: "Foo constant.", longDesc: null},
         ],
         properties: [
-            {name: "bar", value: "42", desc: "$bar property.", visibility: "private", abstract: false, longDesc: null, static: false},
+            {name: "bar", value: "42", desc: "$bar property.", annotations: [], visibility: "private", abstract: false, longDesc: null, static: false},
         ],
         methods: [
             {
