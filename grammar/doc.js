@@ -10,7 +10,7 @@ module.exports = function (g) {
     g.docNl.default = "\n";
 
     // docIndent
-    g.docIndent = or(/^[ \t]*(?= \*)/, /^[ \t]*/);
+    g.docIndent = /^[ \t]*/;
     g.docIndent.default = "";
 
     // docLineMarker
@@ -33,21 +33,12 @@ module.exports = function (g) {
     g.docEndMarker.default = " */";
 
     // docContentUntilNextAnnotationOrEnd
-    g.docContentUntilNextAnnotationOrEnd = multiple([
-        optmul(g.docLineStartBlock),
-        not(or(g.docEndMarker, /^ *@/)),
-        g.docLineContent,
-    ]);
-
-    const fullLineRe = `( *[^ @\\n].*?(?=\\*\\/|\\n))`;
-    const emptyLine = `([ \\t]*[\\r\\n][ \\t]*\\*)`;
-    const withPrefixRe = `${fullLineRe}(${emptyLine}+${fullLineRe})*`;
-    const withSuffixRe = `${fullLineRe}?(${emptyLine}+${fullLineRe})+`;
+    const fullLineRegex = `( *[^ @\\n].*?(?=\\*\\/|\\n|$))`;
+    const emptyLine = `([ \\t]*[\\r\\n][ \\t]*\\*(?!\\/))`;
+    const withPrefixRe = `${fullLineRegex}(${emptyLine}+${fullLineRegex})*`;
+    const withSuffixRe = `${fullLineRegex}?(${emptyLine}+${fullLineRegex})+`;
     const re = `^(${withPrefixRe}|${withSuffixRe})`;
-
-    console.log(fullLineRe); // TODO
-
-    // g.docContentUntilNextAnnotationOrEnd = [new RegExp(re)];
+    g.docContentUntilNextAnnotationOrEnd = [new RegExp(re)];
     g.docContentUntilNextAnnotationOrEnd.buildNode = function (self) {
         self.textWithoutLineStarts = function (text) {
             const indent = self.getIndent();
@@ -99,10 +90,10 @@ module.exports = function (g) {
     };
 
     // docLongDesc
-    g.docLongDesc = [not(/^ *@/), g.docContentUntilNextAnnotationOrEnd];
+    g.docLongDesc = [g.docContentUntilNextAnnotationOrEnd];
     g.docLongDesc.buildNode = function (self) {
         self.longDesc = (longDesc) => {
-            const $docContentUntilNextAnnotationOrEnd = self.children[1];
+            const $docContentUntilNextAnnotationOrEnd = self.children[0];
             if (longDesc === undefined) return $docContentUntilNextAnnotationOrEnd.textWithoutLineStarts().trim();
             $docContentUntilNextAnnotationOrEnd.textWithoutLineStarts(" " + longDesc.trim());
             return self;

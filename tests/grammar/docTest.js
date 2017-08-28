@@ -240,6 +240,14 @@ describe('doc', function () {
         parser.parse(g.doc, `/** Foo */`);
         parser.parse(g.doc, `/** \n *@foo\n*/`);
         parser.parse(g.doc, `/**\n * \n*/`);
+        parser.parse(g.doc, `/**
+ * Foo
+ *Bar
+ *
+ * Plop
+ * @test
+ *plop
+ */`);
     });
 
     it("fail", function () {
