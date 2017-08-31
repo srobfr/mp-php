@@ -7,6 +7,7 @@
   "author": "Simon Robert <srob@srob.fr>",
   "license": "MIT",
   "dependencies": {
+    "fast-levenshtein": "^2.0.6",
     "lodash": "^4.17.4",
     "microparser": "^6.1.0"
   },

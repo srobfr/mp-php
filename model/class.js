@@ -100,25 +100,25 @@ module.exports = function (g, helpers) {
                         });
                     }
 
-                    if (property.constructor) {
+                    if (property.construct) {
                         model.methods = model.methods || [];
-                        let constructor = _.find(model.methods, (m => m.name === "__construct"));
-                        if (!constructor) {
-                            constructor = {
+                        let construct = _.find(model.methods, (m => m.name === "__construct"));
+                        if (!construct) {
+                            construct = {
                                 name: "__construct",
                                 desc: "Constructor.",
                             };
-                            model.methods.push(constructor);
+                            model.methods.push(construct);
                         }
 
-                        constructor.args = constructor.args || [];
-                        constructor.args.push(property);
+                        construct.args = construct.args || [];
+                        construct.args.push(property);
 
-                        const $constructor = self.findOneMethodByName("__construct");
-                        let constructorBody = $constructor ? $constructor.body() : "";
-                        if (!constructorBody.match(new RegExp(`\\$this->${propertyName} *= *`))) {
-                            constructorBody = `${constructorBody}\n\$this->${propertyName} = \$${propertyName};`.trim();
-                            constructor.body = constructorBody;
+                        const $construct = self.findOneMethodByName("__construct");
+                        let constructBody = $construct ? $construct.body() : "";
+                        if (!constructBody.match(new RegExp(`\\$this->${propertyName} *= *`))) {
+                            constructBody = `${constructBody}\n\$this->${propertyName} = \$${propertyName};`.trim();
+                            construct.body = constructBody;
                         }
                     }
                 });

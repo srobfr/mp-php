@@ -40,7 +40,10 @@ describe('file', function () {
             {
                 desc: "Test",
                 longDesc: "Foo",
-                annotations: [],
+                annotations: [
+                    {name: "param", value: "Foo $foo"},
+                    {name: "param", value: "$bar"},
+                ],
                 name: "foo",
                 visibility: "protected",
                 abstract: true,
@@ -87,11 +90,11 @@ final abstract interface Test extends AbstractTest implements Bar, Foo, Plop
      * Test
      *
      * Foo
+     *
+     * @param Foo $foo
+     * @param $bar
      */
-    final abstract static protected function foo(Foo $foo, &$bar = 42)
-    {
-        // TODO
-    }
+    final abstract static protected function foo(Foo $foo, &$bar = 42);
 }
 `;
 

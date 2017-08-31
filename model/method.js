@@ -1,4 +1,5 @@
 const _ = require("lodash");
+const levenshtein = require("fast-levenshtein");
 
 module.exports = function (g, helpers) {
     const {
@@ -85,7 +86,17 @@ module.exports = function (g, helpers) {
             if (model.annotations !== undefined) {
                 const $annotations = self.getAnnotations();
                 model.annotations.forEach(annotation => {
-                    let $annotation = _.find($annotations, $annotation => $annotation.name() === getName(annotation));
+                    const $filteredAnnotations = _.filter($annotations, ($annotation => $annotation.name() === getName(annotation)));
+                    // Guess the best annotation in the list, using Levenshtein distance.
+                    let $annotation = null;
+                    let lowestDist = null;
+                    _.each($filteredAnnotations, ($node => {
+                        const dist = levenshtein.get(annotation.value || '', $node.value() || '');
+                        if (lowestDist !== null && dist >= lowestDist) return;
+                        lowestDist = dist;
+                        $annotation = $node;
+                    }));
+
                     if (isToDelete(annotation)) {
                         if ($annotation) self.removeAnnotation($annotation);
                     } else {
