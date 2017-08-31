@@ -37,10 +37,30 @@ module.exports = function (g, helpers) {
             callIfDefined(model.final, self.final);
             callIfDefined(model.body, self.body);
 
-            if(model.args !== undefined) {
+            if (model.abstract) model.body = null;
+            else if (self.body() === null) model.body = `// TODO`;
+
+            callIfDefined(model.body, self.body);
+
+            if (model.type !== undefined) {
+                if (model.type && !isToDelete(model.type)) {
+                    model.annotations = model.annotations || [];
+                    model.annotations.push({name: "return", value: ` ${model.type}`});
+                } else {
+                    self.findAnnotationsByName("return").forEach($annotation => self.removeAnnotation($annotation));
+                }
+            }
+
+            if (model.args !== undefined) {
                 const $args = self.getArgs();
                 model.args.forEach(arg => {
-                    let $arg = _.find($args, $arg => $arg.name() === getName(arg));
+                    const argName = getName(arg);
+                    let $arg = _.find($args, $arg => $arg.name() === argName);
+                    const $paramAnnotations = self.findAnnotationsByName("param");
+                    const $annotation = _.find($paramAnnotations, ($annotation => $annotation.value().match(new RegExp(`\\$${argName}(?![\w_])`))));
+
+                    if ($annotation) self.removeAnnotation($annotation);
+
                     if (isToDelete(arg)) {
                         if ($arg) self.removeArg($arg);
                     } else {
@@ -48,11 +68,21 @@ module.exports = function (g, helpers) {
                         if (create) $arg = self.parser.parse(g.funcArg);
                         $arg.setModel(arg);
                         if (create) self.insertArg($arg);
+
+                        // Add the @param annotation
+                        const annotParts = ['$' + argName];
+                        if (arg.type) annotParts.unshift(arg.type);
+                        if (arg.desc) annotParts.push(arg.desc);
+
+                        const prevArgName = $arg.prev ? $arg.prev.prev.name() : null;
+                        const $prevArgAnnotation = prevArgName ? _.find($paramAnnotations, ($annotation => $annotation.value().match(new RegExp(`\\$${prevArgName}(?![\w_])`)))) : null;
+                        const $annotation = self.parser.parse(g.docAnnotation, ' @param ' + annotParts.join(" "));
+                        self.insertAnnotation($annotation, $prevArgAnnotation);
                     }
                 });
             }
 
-            if(model.annotations !== undefined) {
+            if (model.annotations !== undefined) {
                 const $annotations = self.getAnnotations();
                 model.annotations.forEach(annotation => {
                     let $annotation = _.find($annotations, $annotation => $annotation.name() === getName(annotation));

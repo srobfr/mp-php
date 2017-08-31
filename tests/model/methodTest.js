@@ -12,6 +12,8 @@ describe('method', function () {
         longDesc: "Foo",
         annotations: [
             {name: "foo", value: "bar"},
+            {name: "param", value: "Foo $foo"},
+            {name: "param", value: "$bar"},
         ],
         name: "foo",
         visibility: "protected",
@@ -31,11 +33,11 @@ describe('method', function () {
  * Foo
  *
  * @foo bar
+ *
+ * @param Foo $foo
+ * @param $bar
  */
-final abstract static protected function foo(Foo $foo, &$bar = 42)
-{
-    // TODO
-}`;
+final abstract static protected function foo(Foo $foo, &$bar = 42);`;
 
     it("set", function () {
         const $method = parser.parse(g.method);

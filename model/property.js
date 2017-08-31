@@ -14,9 +14,16 @@ module.exports = function (g, helpers) {
             callIfDefined(model.longDesc, self.longDesc);
             callIfDefined(model.name, self.name);
             callIfDefined(model.value, self.value);
+
+            if (model.visibility === undefined && !self.visibility()) model.visibility = "private";
             callIfDefined(model.visibility, self.visibility);
             callIfDefined(model.abstract, self.abstract);
             callIfDefined(model.static, self.static);
+
+            if(model.type !== undefined) {
+                model.annotations = model.annotations || [];
+                model.annotations.push({name: "var", value: ` ${model.type}`});
+            }
 
             if(model.annotations !== undefined) {
                 const $annotations = self.getAnnotations();
@@ -32,7 +39,6 @@ module.exports = function (g, helpers) {
                     }
                 });
             }
-
         };
 
         self.getModel = function () {

@@ -37,7 +37,7 @@ module.exports = function (g, helpers) {
             callIfDefined(model.desc, self.desc);
             callIfDefined(model.longDesc, self.longDesc);
 
-            if(model.annotations !== undefined) {
+            if (model.annotations !== undefined) {
                 const $annotations = self.getAnnotations();
                 model.annotations.forEach(annotation => {
                     let $annotation = _.find($annotations, $annotation => $annotation.name() === getName(annotation));
@@ -62,7 +62,11 @@ module.exports = function (g, helpers) {
             if (model.properties !== undefined) {
                 const $properties = self.getProperties();
                 model.properties.forEach(property => {
-                    let $property = _.find($properties, $property => $property.name() === getName(property));
+                    const propertyName = getName(property);
+
+                    let $property = _.find($properties, $property => $property.name() === propertyName);
+                    if (!$property && property.was) $property = _.find($properties, $property => $property.name() === property.was);
+
                     if (isToDelete(property)) {
                         if ($property) self.removeProperty($property);
                     } else {
@@ -73,6 +77,49 @@ module.exports = function (g, helpers) {
                         }
                         $property.setModel(property);
                         if (create) self.insertProperty($property);
+                    }
+
+                    if (property.getter) {
+                        model.methods = model.methods || [];
+                        model.methods.push({
+                            name: `get${_.upperFirst(propertyName)}`,
+                            desc: `Returns the \$${propertyName} property value.`,
+                            body: `return \$this->${propertyName};`,
+                            type: property.type
+                        });
+                    }
+
+                    if (property.setter) {
+                        model.methods = model.methods || [];
+                        model.methods.push({
+                            name: `set${_.upperFirst(propertyName)}`,
+                            desc: `Affects the \$${propertyName} property value.`,
+                            args: [property],
+                            type: self.name(),
+                            body: `\$this->${propertyName} = \$${propertyName};\n\nreturn \$this;`,
+                        });
+                    }
+
+                    if (property.constructor) {
+                        model.methods = model.methods || [];
+                        let constructor = _.find(model.methods, (m => m.name === "__construct"));
+                        if (!constructor) {
+                            constructor = {
+                                name: "__construct",
+                                desc: "Constructor.",
+                            };
+                            model.methods.push(constructor);
+                        }
+
+                        constructor.args = constructor.args || [];
+                        constructor.args.push(property);
+
+                        const $constructor = self.findOneMethodByName("__construct");
+                        let constructorBody = $constructor ? $constructor.body() : "";
+                        if (!constructorBody.match(new RegExp(`\\$this->${propertyName} *= *`))) {
+                            constructorBody = `${constructorBody}\n\$this->${propertyName} = \$${propertyName};`.trim();
+                            constructor.body = constructorBody;
+                        }
                     }
                 });
             }
@@ -125,8 +172,10 @@ module.exports = function (g, helpers) {
             }
 
             if (model.methods !== undefined) {
+                const isInterface = (self.kind() === "interface");
                 model.methods.forEach(method => {
                     let $method = self.findOneMethodByName(getName(method));
+                    if (!$method && method.was) $method = self.findOneMethodByName(method.was);
 
                     if (isToDelete(method)) {
                         if ($method) self.removeMethod($method);
@@ -135,6 +184,7 @@ module.exports = function (g, helpers) {
                         if (create) $method = self.parser.parse(g.method);
                         $method.parent = self.findOneByGrammar(g.classBodyItems);
                         $method.setModel(method);
+                        if (isInterface) $method.body(null);
                         if (create) self.insertMethod($method);
                     }
                 });

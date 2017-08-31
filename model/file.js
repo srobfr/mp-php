@@ -4,7 +4,6 @@ module.exports = function (g, helpers) {
     const {
         extendBuildNodeFunc,
         callIfDefined,
-        getName,
         isToDelete
     } = helpers;
 
@@ -30,6 +29,8 @@ module.exports = function (g, helpers) {
         ];
 
         self.setModel = function (model) {
+            if (!model.name && model.path) model.name = model.path.match(/([^/]+?)\.php$/)[1];
+
             callIfDefined(model.namespace, self.namespace);
 
             if (model.uses !== undefined) {
@@ -46,7 +47,6 @@ module.exports = function (g, helpers) {
                     }
                 });
             }
-
 
             const classModel = {};
             classModelKeys.forEach(key => classModel[key] = model[key]);

@@ -48,6 +48,9 @@ module.exports = function (g) {
         self.type = function (type) {
             let $funcArgType = self.children[0];
             if (type === undefined) return $funcArgType ? $funcArgType.findOneByGrammar(g.funcArgType).type() : null;
+
+            if (type && type.match(/^(string|int(eger)?|bool(ean)?)/)) type = null; // PHP5
+
             if (type === null) {
                 if ($funcArgType) self.empty();
             } else {
@@ -231,7 +234,7 @@ module.exports = function (g) {
         proxy("desc", () => self.children[0]);
         proxy("longDesc", () => self.children[0]);
         proxyGet("getAnnotations", () => self.children[0]);
-        proxyGet("findAnnotationByName", () => self.children[0]);
+        proxyGet("findAnnotationsByName", () => self.children[0]);
         proxySet("insertAnnotation", () => self.children[0]);
         proxySet("removeAnnotation", () => self.children[0]);
 
