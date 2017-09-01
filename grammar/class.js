@@ -36,6 +36,15 @@ module.exports = function (g) {
         g.property,
         g.method,
         g.public, g.protected, g.private,
+        ($node => {
+            const $name = $node.findOneByGrammar(g.funcName);
+            if ($name) {
+                const m = $name.text().match(/^(is|has|[gs]et)(.+)/);
+                if (m) return m[2] + m[1];
+            }
+            return '';
+        }),
+        ($node => $node.name ? $node.name() : null),
         ($node => $node.text())
     ];
     g.classBodyItems.buildNode = function (self) {

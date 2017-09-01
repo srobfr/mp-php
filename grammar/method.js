@@ -127,7 +127,16 @@ module.exports = function (g) {
         self.body = function (body) {
             const $orChild = self.children[1].children[0];
             const $bracesBlock = ($orChild.grammar === g.bracesBlock ? $orChild : null);
-            if (body === undefined) return $bracesBlock ? $bracesBlock.children[1].text().trim() : null;
+            if (body === undefined) {
+                if (!$bracesBlock) return null;
+                const body = $bracesBlock.children[1].text();
+                // Get the shortest indentation
+                const lines = body.split("\n");
+                const re = new RegExp('^' + self.getIndent() + g.INDENT);
+                const unindentedLines = lines.map(line => line.replace(re, ''));
+
+                return unindentedLines.join("\n").trim();
+            }
             if (body === null) {
                 if ($bracesBlock) self.text(";");
             } else {
