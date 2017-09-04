@@ -99,7 +99,7 @@ module.exports = function (g) {
                 if (!$namespace) {
                     const $namespaceItem = self.parser.parse(g.fileItem, g.namespace.default);
                     $namespace = $namespaceItem.children[0];
-                    self.insert($namespace);
+                    self.insert($namespaceItem);
                 }
 
                 $namespace.findOneByGrammar(g.fqn).text(namespace);
@@ -133,7 +133,7 @@ module.exports = function (g) {
         g.fileItems, g.ow,
         g.fileEnd,
     ];
-    g.file.default = `<?php\n\nnamespace TODO;\n\n/**\n * TODO\n */\nclass TODO\n{\n\n}\n`;
+    g.file.default = `<?php\n\nclass TODO\n{\n\n}\n`;
     g.file.buildNode = function (self) {
         function proxyWithStartEndFix(methodName, target) {
             self[methodName] = function () {
