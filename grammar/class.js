@@ -128,6 +128,7 @@ module.exports = function (g) {
         g.w
     ];
     g.classMarkers = optmul(g.classMarkerBlock);
+    g.classMarkers.order = [g.final, g.abstract];
     g.classMarkers.buildNode = function (self) {
         function buildMarkerHandler(marker) {
             return function (value) {
