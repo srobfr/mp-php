@@ -52,7 +52,6 @@ module.exports = function (g, helpers) {
                 });
             }
 
-            callIfDefined(model.abstract, self.abstract);
             callIfDefined(model.final, self.final);
 
             callIfDefined(model.kind, self.kind);
@@ -115,7 +114,7 @@ module.exports = function (g, helpers) {
                         construct.args.push(property);
 
                         const $construct = self.findOneMethodByName("__construct");
-                        let constructBody = $construct ? $construct.body() : "";
+                        let constructBody = construct.body || ($construct ? $construct.body() : "");
                         if (!constructBody.match(new RegExp(`\\$this->${propertyName} *= *`))) {
                             constructBody = `${constructBody}\n\$this->${propertyName} = \$${propertyName};`.trim();
                             construct.body = constructBody;
@@ -174,6 +173,8 @@ module.exports = function (g, helpers) {
             if (model.methods !== undefined) {
                 const isInterface = (self.kind() === "interface");
                 model.methods.forEach(method => {
+                    if (method.abstract) model.abstract = true;
+
                     let $method = self.findOneMethodByName(getName(method));
                     if (!$method && method.was) $method = self.findOneMethodByName(method.was);
 
@@ -189,6 +190,8 @@ module.exports = function (g, helpers) {
                     }
                 });
             }
+
+            callIfDefined(model.abstract, self.abstract);
         };
 
         self.getModel = function () {

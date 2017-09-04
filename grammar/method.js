@@ -133,15 +133,14 @@ module.exports = function (g) {
                 // Get the shortest indentation
                 const lines = body.split("\n");
                 const re = new RegExp('^' + self.getIndent() + g.INDENT);
-                const unindentedLines = lines.map(line => line.replace(re, ''));
-
-                return unindentedLines.join("\n").trim();
+                const unIndentedLines = lines.map(line => line.replace(re, ''));
+                return unIndentedLines.join("\n").trim();
             }
             if (body === null) {
                 if ($bracesBlock) self.text(";");
             } else {
                 const indent = self.getIndent();
-                const indentedBody = body.split("\n").map(l => `${indent + g.INDENT}${l}`).join("\n");
+                const indentedBody = body.split("\n").map(l => `${indent + g.INDENT}${l}`).join("\n").replace(/\n[\t ]+(?=\n)/g, "\n");
                 self.text(`\n${indent}{\n${indentedBody}\n${indent}}`);
             }
             return self;
