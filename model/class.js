@@ -105,7 +105,6 @@ module.exports = function (g, helpers) {
                         if (!construct) {
                             construct = {
                                 name: "__construct",
-                                desc: "Constructor.",
                             };
                             model.methods.push(construct);
                         }
@@ -119,6 +118,7 @@ module.exports = function (g, helpers) {
                             constructBody = `${constructBody}\n\$this->${propertyName} = \$${propertyName};`.trim();
                             construct.body = constructBody;
                         }
+                        if (!$construct) construct.desc = "Constructor.";
                     }
                 });
             }
