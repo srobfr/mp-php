@@ -237,6 +237,12 @@ module.exports = function (g) {
 
             return self;
         };
+
+        self.longDesc = function (longDesc) {
+            // Not implemented
+            return self;
+        };
+
         self.getAnnotations = function () {
             let $docAnnotation = self.children[1].children[0];
             if ($docAnnotation.grammar !== g.docAnnotation) return [];
