@@ -106,7 +106,7 @@ module.exports = function (g) {
     g.funcArgs = optmul(g.funcArg, g.funcArgsSeparator);
     g.funcArgs.order = [
         ($node => $node.findOneByGrammar(g.defaultValue) ? 0 : 1),
-        ($node => $node.text()),
+        ($node => $node.name()),
     ];
     g.funcArgs.buildNode = function (self) {
         self.getArgs = () => self.findByGrammar(g.funcArg);

@@ -185,7 +185,13 @@ module.exports = function (g) {
             // Wrap in a docAnnotationBlock
             const $docAnnotationBlock = self.parser.parse(g.docAnnotationBlock);
             $docAnnotationBlock.children[1].replaceWith($docAnnotation);
-            self.insert($docAnnotationBlock, $previousNode ? $previousNode.findParentByGrammar(g.docAnnotationBlock) : undefined);
+            self.insert($docAnnotationBlock,
+                $previousNode === null
+                ? null
+                : $previousNode
+                    ? $previousNode.findParentByGrammar(g.docAnnotationBlock)
+                    : undefined
+            );
 
             // Fix separators
             const indent = self.getIndent();
