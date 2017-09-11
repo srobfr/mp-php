@@ -1,14 +1,15 @@
 const _ = require("lodash");
 const levenshtein = require("fast-levenshtein");
+const {
+    callIfDefined,
+    extendBuildNodeFunc,
+    getName,
+    isToDelete,
+    phpDocTypeToPhpType,
+    phpTypeToPhpDocType,
+} = require(__dirname + "/../helpers.js");
 
-module.exports = function (g, helpers) {
-    const {
-        extendBuildNodeFunc,
-        callIfDefined,
-        getName,
-        isToDelete
-    } = helpers;
-
+module.exports = function (g) {
     extendBuildNodeFunc(g.funcArg, function (self) {
         self.setModel = function (model) {
             callIfDefined(model.name, self.name);

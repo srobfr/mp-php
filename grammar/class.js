@@ -44,7 +44,7 @@ module.exports = function (g) {
             }
             return '';
         }),
-        ($node => $node.name ? $node.name() : null),
+        ($node => $node.children[0].name ? $node.children[0].name() : null),
         ($node => $node.text())
     ];
     g.classBodyItems.buildNode = function (self) {

@@ -1,44 +1,13 @@
 const _ = require("lodash");
 const {multiple, not, optional, optmul, or} = require("microparser").grammarHelpers;
+const {phpTypeToPhpDocType, phpDocTypeToPhpType} = require(__dirname + "/../helpers.js");
 
 module.exports = function (g) {
     g.funcArgType = [optional("?"), g.fqn];
     g.funcArgType.buildNode = function (self) {
-        function phpTypeToPhpDocType(phpType) {
-            const m = phpType.match(/^(\?)?(.+)$/);
-            if (!m) throw new Error(`Unable to convert PHP type "${phpType} to the equivalent PHP doc type.`);
-            return m[2] + (m[1] ? "|null" : "");
-        }
-
-        function phpDocTypeToPhpType(phpDocType) {
-            const types = phpDocType.split("|");
-            let isNullable = false;
-            let isArray = false;
-            let r = null;
-            types.forEach(type => {
-                let m;
-                if (type === "null") isNullable = true;
-                else if (m = type.match(/^(.+?)\[\]$/)) {
-                    r = m[1];
-                    isArray = true;
-                } else {
-                    r = type;
-                }
-            });
-
-            if (isArray) r = "array";
-            if (isNullable) r = "?" + r;
-            return r;
-        }
-
-        self.phpDocType = function (phpDocType) {
+        self.type = function (phpDocType) {
             if (phpDocType === undefined) return phpTypeToPhpDocType(self.text());
             self.text(phpDocTypeToPhpType(phpDocType));
-            return self;
-        };
-        self.type = function (type) {
-            if (type === undefined) return self.text();
-            self.text(type);
             return self;
         };
     };
