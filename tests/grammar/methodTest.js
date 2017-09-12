@@ -5,48 +5,6 @@ const g = require(__dirname + "/../../index.js").grammar;
 
 const parser = new Parser();
 
-describe('funcArgType', function () {
-    describe('phpDocType', function () {
-        it("get", () => {
-            const $funcArgType = parser.parse(g.funcArgType, `?Foo\\Bar`);
-            assert.equal($funcArgType.phpDocType(), "Foo\\Bar|null");
-        });
-        it("get 2", () => {
-            const $funcArgType = parser.parse(g.funcArgType, `Foo\\Bar`);
-            assert.equal($funcArgType.phpDocType(), "Foo\\Bar");
-        });
-        it("get 3", () => {
-            const $funcArgType = parser.parse(g.funcArgType, `string`);
-            assert.equal($funcArgType.phpDocType(), "string");
-        });
-        it("set", () => {
-            const $funcArgType = parser.parse(g.funcArgType, `Foo`);
-            $funcArgType.phpDocType("Bar");
-            assert.equal($funcArgType.text(), "Bar");
-        });
-        it("set 2", () => {
-            const $funcArgType = parser.parse(g.funcArgType, `Foo`);
-            $funcArgType.phpDocType("Bar|null");
-            assert.equal($funcArgType.text(), "?Bar");
-        });
-        it("set 3", () => {
-            const $funcArgType = parser.parse(g.funcArgType, `Foo`);
-            $funcArgType.phpDocType("null|Bar");
-            assert.equal($funcArgType.text(), "?Bar");
-        });
-        it("set 4", () => {
-            const $funcArgType = parser.parse(g.funcArgType, `Foo`);
-            $funcArgType.phpDocType("Bar[]");
-            assert.equal($funcArgType.text(), "array");
-        });
-        it("set 5", () => {
-            const $funcArgType = parser.parse(g.funcArgType, `Foo`);
-            $funcArgType.phpDocType("Bar[]|null");
-            assert.equal($funcArgType.text(), "?array");
-        });
-    });
-});
-
 describe('funcArg', function () {
     describe('name', function () {
         it("get", () => {
