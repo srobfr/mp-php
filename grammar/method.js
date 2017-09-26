@@ -18,8 +18,8 @@ module.exports = function (g) {
             let $funcArgType = self.children[0];
             if (type === undefined) return $funcArgType ? $funcArgType.findOneByGrammar(g.funcArgType).type() : null;
 
-            if (type && type.match(/^(string|int(eger)?|bool(ean)?)/)) type = null; // PHP5
-
+            if (type && type.match(/^(string|int(eger)?|bool(ean)?|mixed|void)/)) type = null;
+            
             if (type === null) {
                 if ($funcArgType) self.empty();
             } else {
