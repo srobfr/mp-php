@@ -22,7 +22,7 @@ describe('class', function () {
         extends: "AbstractTest",
         final: true,
         abstract: true,
-        kind: "interface",
+        kind: "class",
         uses: [
             {fqn: "Foo\\Bar"},
         ],
@@ -62,7 +62,7 @@ describe('class', function () {
  *
  * @author Simon Robert <srob@srob.fr>
  */
-final abstract interface Test extends AbstractTest implements Bar, Foo, Plop
+final abstract class Test extends AbstractTest implements Bar, Foo, Plop
 {
     use Foo\\Bar;
 

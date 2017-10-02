@@ -23,7 +23,7 @@ describe('file', function () {
         extends: "AbstractTest",
         final: true,
         abstract: true,
-        kind: "interface",
+        kind: "class",
         uses: [
             {fqn: "Foo\\Bar", alias: "Plop"},
         ],
@@ -72,7 +72,7 @@ use Foo\\Bar as Plop;
  *
  * @foo
  */
-final abstract interface Test extends AbstractTest implements Bar, Foo, Plop
+final abstract class Test extends AbstractTest implements Bar, Foo, Plop
 {
     use MyTrait;
 
