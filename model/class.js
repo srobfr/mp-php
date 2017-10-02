@@ -62,20 +62,23 @@ module.exports = function (g, helpers) {
                 const $properties = self.getProperties();
                 model.properties.forEach(property => {
                     const propertyName = getName(property);
+                    const isInterface = (self.kind() === "interface");
 
-                    let $property = _.find($properties, $property => $property.name() === propertyName);
-                    if (!$property && property.was) $property = _.find($properties, $property => $property.name() === property.was);
+                    if (!isInterface) {
+                        let $property = _.find($properties, $property => $property.name() === propertyName);
+                        if (!$property && property.was) $property = _.find($properties, $property => $property.name() === property.was);
 
-                    if (isToDelete(property)) {
-                        if ($property) self.removeProperty($property);
-                    } else {
-                        const create = (!$property);
-                        if (create) {
-                            $property = self.parser.parse(g.property);
-                            $property.parent = self.findOneByGrammar(g.classBodyItems);
+                        if (isToDelete(property)) {
+                            if ($property) self.removeProperty($property);
+                        } else {
+                            const create = (!$property);
+                            if (create) {
+                                $property = self.parser.parse(g.property);
+                                $property.parent = self.findOneByGrammar(g.classBodyItems);
+                            }
+                            $property.setModel(property);
+                            if (create) self.insertProperty($property);
                         }
-                        $property.setModel(property);
-                        if (create) self.insertProperty($property);
                     }
 
                     if (property.getter) {
