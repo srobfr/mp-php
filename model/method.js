@@ -55,7 +55,7 @@ module.exports = function (g) {
 
             if (model.args !== undefined) {
                 const $args = self.getArgs();
-                _.toArray(model.args).forEach(arg => {
+                model.args.forEach(arg => {
                     const argName = getName(arg);
                     let $arg = _.find($args, $arg => $arg.name() === argName);
                     const $paramAnnotations = self.findAnnotationsByName("param");

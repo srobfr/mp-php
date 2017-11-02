@@ -254,6 +254,9 @@ module.exports = function (g) {
             if ($docAnnotation.grammar !== g.docAnnotation) return [];
             return [$docAnnotation];
         };
+        self.findAnnotationsByName = (name) => {
+            return _.filter(self.getAnnotations(), $annotation => $annotation.name() === name);
+        };
     };
 
     // docMultiline
