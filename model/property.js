@@ -26,9 +26,8 @@ module.exports = function (g, helpers) {
             }
 
             if(model.annotations !== undefined) {
-                const $annotations = self.getAnnotations();
                 model.annotations.forEach(annotation => {
-                    let $annotation = _.find($annotations, $annotation => $annotation.name() === getName(annotation));
+                    let $annotation = _.find(self.getAnnotations(), $annotation => $annotation.name() === getName(annotation));
                     if (isToDelete(annotation)) {
                         if ($annotation) self.removeAnnotation($annotation);
                     } else {
