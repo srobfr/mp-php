@@ -6,6 +6,7 @@ g.INDENT = "    ";
 
 // Base grammar
 require(__dirname + "/grammar/basic.js")(g);
+require(__dirname + "/grammar/code.js")(g);
 require(__dirname + "/grammar/doc.js")(g);
 require(__dirname + "/grammar/constant.js")(g);
 require(__dirname + "/grammar/method.js")(g);

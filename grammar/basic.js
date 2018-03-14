@@ -62,7 +62,7 @@ module.exports = function (g) {
 
     g.optDefaultValue = optional(g.defaultValue);
     g.optDefaultValue.buildNode = function (self) {
-        self.value = function(value) {
+        self.value = function (value) {
             let $defaultValue = self.children[0];
             if (value === undefined) return $defaultValue ? $defaultValue.children[3].text() : null;
             if (value === null) {
