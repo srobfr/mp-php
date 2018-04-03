@@ -21,6 +21,7 @@ describe('method', function () {
         static: true,
         final: true,
         body: `// TODO`,
+        type: null,
         args: [
             {name: "foo", byReference: false, type: "Foo", value: null},
             {name: "bar", byReference: true, type: null, value: "42"}

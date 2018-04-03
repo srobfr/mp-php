@@ -122,8 +122,11 @@ module.exports = function (g) {
         self.type = function (type) {
             const $fqn = self.children[0];
             if (type === undefined) return $fqn ? $fqn.text() : null;
-            if ($fqn) $fqn.text(type);
-            else self.text(`: ${type}`);
+            if (type === null) self.text('');
+            else if (!type.match(/^(mixed|void|null)$/)) {
+                if ($fqn) $fqn.text(type);
+                else self.text(`: ${type}`);
+            }
             return self;
         };
     };

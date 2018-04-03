@@ -516,7 +516,7 @@ public function foo();`);
             assert.equal($method.text(), `/**
  * @return TODO
  */
-public function foo();`);
+public function foo(): TODO;`);
         });
         it("set2", () => {
             const $method = parser.parse(g.method, `/**
@@ -527,7 +527,7 @@ public function foo();`);
             assert.equal($method.text(), `/**
             * @return TODO
             */
-            public function foo();`);
+            public function foo(): TODO;`);
         });
         it("set null", () => {
             const $method = parser.parse(g.method, `/**

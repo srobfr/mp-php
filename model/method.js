@@ -105,6 +105,7 @@ module.exports = function (g) {
                         const create = (!$annotation);
                         if (create) {
                             $annotation = self.parser.parse(g.docAnnotation);
+                            $annotation.name(annotation.name);
                             self.insertAnnotation($annotation);
                         }
 

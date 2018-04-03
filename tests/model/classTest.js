@@ -45,6 +45,7 @@ describe('class', function () {
                 abstract: true,
                 static: true,
                 final: true,
+                type: null,
                 body: `// TODO`,
                 args: [
                     {name: "foo", byReference: false, type: "Foo", value: null},
