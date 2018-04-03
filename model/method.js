@@ -38,6 +38,7 @@ module.exports = function (g) {
             callIfDefined(model.static, self.static);
             callIfDefined(model.final, self.final);
             callIfDefined(model.body, self.body);
+            callIfDefined(model.type, self.type); // PHP7
 
             if (model.abstract) model.body = null;
             else if (self.body() === null) model.body = `// TODO`;
@@ -119,6 +120,7 @@ module.exports = function (g) {
                 longDesc: self.longDesc(),
                 annotations: self.getAnnotations().map($docAnnotation => $docAnnotation.getModel()),
                 name: self.name(),
+                type: self.type(),
                 visibility: self.visibility(),
                 abstract: self.abstract(),
                 static: self.static(),

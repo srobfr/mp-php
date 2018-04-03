@@ -18,8 +18,9 @@ module.exports = function (g) {
             let $funcArgType = self.children[0];
             if (type === undefined) return $funcArgType ? $funcArgType.findOneByGrammar(g.funcArgType).type() : null;
 
-            if (type && type.match(/^(string|int(eger)?|bool(ean)?|mixed|void)/)) type = null;
-            
+            // if (type && type.match(/^(string|int(eger)?|bool(ean)?|mixed|void)/)) type = null; // PHP5
+            if (type && type.match(/^(mixed|void)/)) type = null; // PHP7
+
             if (type === null) {
                 if ($funcArgType) self.empty();
             } else {
@@ -117,6 +118,15 @@ module.exports = function (g) {
     };
 
     g.funcReturnType = optional([g.ow, ":", g.ow, g.fqn]);
+    g.funcReturnType.buildNode = function (self) {
+        self.type = function (type) {
+            const $fqn = self.children[0];
+            if (type === undefined) return $fqn ? $fqn.text() : null;
+            if ($fqn) $fqn.text(type);
+            else self.text(`: ${type}`);
+            return self;
+        };
+    };
 
     g.funcName = [g.ident];
 
@@ -132,6 +142,12 @@ module.exports = function (g) {
             const $funcBody = self.children[10];
             const r = $funcBody.body(body);
             return (body === undefined ? r : self);
+        };
+
+        self.type = function (type) {
+            const $funcReturnType = self.children[9];
+            const r = $funcReturnType.type(type);
+            return (type === undefined ? r : self);
         };
 
         self.getArgs = () => self.children[6].getArgs();
@@ -187,9 +203,9 @@ module.exports = function (g) {
     g.method = [g.optDoc, g.methodMarkers, g.func];
     g.method.default = `public function todo();`;
 
-    g.method.buildNode = function(self) {
+    g.method.buildNode = function (self) {
         function proxy(methodName, target) {
-            self[methodName] = function() {
+            self[methodName] = function () {
                 const r = target()[methodName].apply(this, arguments);
                 return (arguments[0] === undefined ? r : self);
             };
@@ -228,7 +244,7 @@ module.exports = function (g) {
         proxy("insertArg", () => self.children[2]);
         proxy("removeArg", () => self.children[2]);
 
-        self.type = function(type) {
+        self.type = function (type) {
             const $optDoc = self.children[0];
             let $returnAnnotation = _.first($optDoc.findAnnotationsByName('return'));
 
@@ -243,6 +259,8 @@ module.exports = function (g) {
                     $returnAnnotation.value(type);
                 }
             }
+
+            self.children[2].type(type);
 
             return self;
         };
