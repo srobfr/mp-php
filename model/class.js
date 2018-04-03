@@ -83,8 +83,9 @@ module.exports = function (g, helpers) {
 
                     if (property.getter) {
                         model.methods = model.methods || [];
+                        const prefix = (model.type||'').match(/^bool(ean)?$/) ? 'is' : 'get';
                         model.methods.push({
-                            name: `get${_.upperFirst(propertyName)}`,
+                            name: prefix + _.upperFirst(propertyName),
                             desc: `Returns the \$${propertyName} property value.`,
                             body: `return \$this->${propertyName};`,
                             type: property.type

@@ -149,7 +149,7 @@ module.exports = function (g) {
                     $docAnnotationValue = self.children[0];
                 }
 
-                value = (value[0] === " " ? value : " " + value);
+                value = (value[0].match(/^[ (]/) ? value : " " + value);
                 $docAnnotationValue.textWithoutLineStarts(value);
             }
 

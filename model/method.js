@@ -102,9 +102,12 @@ module.exports = function (g) {
                         if ($annotation) self.removeAnnotation($annotation);
                     } else {
                         const create = (!$annotation);
-                        if (create) $annotation = self.parser.parse(g.docAnnotation);
+                        if (create) {
+                            $annotation = self.parser.parse(g.docAnnotation);
+                            self.insertAnnotation($annotation);
+                        }
+
                         $annotation.setModel(annotation);
-                        if (create) self.insertAnnotation($annotation);
                     }
                 });
             }
