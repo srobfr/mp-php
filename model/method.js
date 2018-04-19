@@ -40,10 +40,8 @@ module.exports = function (g) {
             callIfDefined(model.body, self.body);
             callIfDefined(model.type, self.type); // PHP7
 
-            if (model.abstract) model.body = null;
-            else if (self.body() === null) model.body = `// TODO`;
-
-            callIfDefined(model.body, self.body);
+            if (self.abstract()) self.body(null);
+            else if (self.body() === null) self.body(`// TODO`);
 
             if (model.type !== undefined) {
                 if (model.type && !isToDelete(model.type)) {
@@ -55,10 +53,9 @@ module.exports = function (g) {
             }
 
             if (model.args !== undefined) {
-                const $args = self.getArgs();
                 model.args.forEach(arg => {
                     const argName = getName(arg);
-                    let $arg = _.find($args, $arg => $arg.name() === argName);
+                    let $arg = self.findArgByName(argName);
                     const $paramAnnotations = self.findAnnotationsByName("param");
                     const $annotation = _.find($paramAnnotations, ($annotation => $annotation.value().match(new RegExp(`\\$${argName}(?![\w_])`))));
 
@@ -70,7 +67,8 @@ module.exports = function (g) {
                         const create = (!$arg);
                         if (create) $arg = self.parser.parse(g.funcArg);
                         $arg.setModel(arg);
-                        if (create) self.insertArg($arg);
+                        const $prevNode = (arg.after ? self.findArgByName(arg.after) : undefined);
+                        if (create) self.insertArg($arg, $prevNode);
 
                         // Add the @param annotation
                         const annotParts = ['$' + argName];

@@ -80,7 +80,7 @@ module.exports = function (g) {
     ];
     g.funcArgs.buildNode = function (self) {
         self.getArgs = () => self.findByGrammar(g.funcArg);
-        self.findArgByName = (name) => self.getArgs().filter(($funcArg) => $funcArg.name() === name);
+        self.findArgByName = (name) => self.getArgs().find(($funcArg) => $funcArg.name() === name);
         self.insertArg = function ($funcArg, $previousNode) {
             self.insert($funcArg, $previousNode);
             return self;
@@ -209,21 +209,21 @@ module.exports = function (g) {
 
     g.method.buildNode = function (self) {
         function proxy(methodName, target) {
-            self[methodName] = function () {
-                const r = target()[methodName].apply(this, arguments);
-                return (arguments[0] === undefined ? r : self);
+            self[methodName] = function (...args) {
+                const r = target()[methodName].apply(this, args);
+                return (args[0] === undefined ? r : self);
             };
         }
 
         function proxyGet(methodName, target) {
-            self[methodName] = function () {
-                return target()[methodName].apply(this, arguments);
+            self[methodName] = function (...args) {
+                return target()[methodName].apply(this, args);
             };
         }
 
         function proxySet(methodName, target) {
-            self[methodName] = function () {
-                target()[methodName].apply(this, arguments);
+            self[methodName] = function (...args) {
+                target()[methodName].apply(this, args);
                 return self;
             };
         }
@@ -243,10 +243,10 @@ module.exports = function (g) {
         proxy("name", () => self.children[2]);
         proxy("body", () => self.children[2]);
 
-        proxy("getArgs", () => self.children[2]);
-        proxy("findArgByName", () => self.children[2]);
-        proxy("insertArg", () => self.children[2]);
-        proxy("removeArg", () => self.children[2]);
+        proxyGet("getArgs", () => self.children[2]);
+        proxyGet("findArgByName", () => self.children[2]);
+        proxySet("insertArg", () => self.children[2]);
+        proxySet("removeArg", () => self.children[2]);
 
         self.type = function (type) {
             const $optDoc = self.children[0];

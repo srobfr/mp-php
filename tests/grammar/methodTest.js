@@ -101,8 +101,7 @@ describe('funcArgs', function () {
     it("find by name", function () {
         const $funcArgs = parser.parse(g.funcArgs, `$foo, $bar`);
         const $argsList = $funcArgs.findArgByName("bar");
-        assert.equal($argsList.length, 1);
-        assert.equal($argsList[0].name(), "bar");
+        assert.equal($argsList.name(), "bar");
     });
     it("insert at starting", function () {
         const $funcArgs = parser.parse(g.funcArgs, `$foo,  $bar`);
@@ -125,17 +124,17 @@ describe('funcArgs', function () {
     it("insert after", function () {
         const $funcArgs = parser.parse(g.funcArgs, `$foo,  $bar`);
         const $funcArg = parser.parse(g.funcArg, `Test $test = 42`);
-        $funcArgs.insertArg($funcArg, $funcArgs.findArgByName("foo")[0]);
+        $funcArgs.insertArg($funcArg, $funcArgs.findArgByName("foo"));
         assert.equal($funcArgs.text(), `$foo, Test $test = 42,  $bar`);
     });
     it("remove one", function () {
         const $funcArgs = parser.parse(g.funcArgs, `$foo,  $bar`);
-        $funcArgs.removeArg($funcArgs.findArgByName("foo")[0]);
+        $funcArgs.removeArg($funcArgs.findArgByName("foo"));
         assert.equal($funcArgs.text(), `$bar`);
     });
     it("remove", function () {
         const $funcArgs = parser.parse(g.funcArgs, `$foo`);
-        $funcArgs.removeArg($funcArgs.findArgByName("foo")[0]);
+        $funcArgs.removeArg($funcArgs.findArgByName("foo"));
         assert.equal($funcArgs.text(), ``);
     });
 });
@@ -201,8 +200,7 @@ describe('func', function () {
         it("find by name", function () {
             const $func = parser.parse(g.func, `function test(Bar $bar);`);
             const $argsList = $func.findArgByName("bar");
-            assert.equal($argsList.length, 1);
-            assert.equal($argsList[0].name(), "bar");
+            assert.equal($argsList.name(), "bar");
         });
         it("insert at starting", function () {
             const $func = parser.parse(g.func, `function test(Bar $bar);`);
@@ -225,17 +223,17 @@ describe('func', function () {
         it("insert after", function () {
             const $func = parser.parse(g.func, `function test($foo,  $bar);`);
             const $funcArg = parser.parse(g.funcArg, `Test $test = 42`);
-            $func.insertArg($funcArg, $func.findArgByName("foo")[0]);
+            $func.insertArg($funcArg, $func.findArgByName("foo"));
             assert.equal($func.text(), `function test($foo, Test $test = 42,  $bar);`);
         });
         it("remove one", function () {
             const $func = parser.parse(g.func, `function test($foo,  $bar);`);
-            $func.removeArg($func.findArgByName("foo")[0]);
+            $func.removeArg($func.findArgByName("foo"));
             assert.equal($func.text(), `function test($bar);`);
         });
         it("remove", function () {
             const $func = parser.parse(g.func, `function test($foo);`);
-            $func.removeArg($func.findArgByName("foo")[0]);
+            $func.removeArg($func.findArgByName("foo"));
             assert.equal($func.text(), `function test();`);
         });
     });
@@ -568,6 +566,12 @@ public function foo();`, $method.text());
         it("removeArg", function () {
             const $method = parser.parse(g.method, `public function foo();`);
             assert($method.removeArg !== undefined);
+        });
+        it("insert after", function () {
+            const $method = parser.parse(g.method, `public function test($foo,  $bar);`);
+            const $funcArg = parser.parse(g.funcArg, `Test $test = 42`);
+            $method.insertArg($funcArg, $method.findArgByName("foo"));
+            assert.equal($method.text(), `public function test($foo, Test $test = 42,  $bar);`);
         });
     });
 })

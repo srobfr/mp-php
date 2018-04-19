@@ -50,7 +50,7 @@ describe('file', function () {
                 static: true,
                 final: true,
                 type: null,
-                body: `// TODO`,
+                body: null,
                 args: [
                     {name: "foo", byReference: false, type: "Foo", value: null},
                     {name: "bar", byReference: true, type: null, value: "42"}

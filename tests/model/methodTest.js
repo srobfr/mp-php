@@ -20,7 +20,7 @@ describe('method', function () {
         abstract: true,
         static: true,
         final: true,
-        body: `// TODO`,
+        body: null,
         type: null,
         args: [
             {name: "foo", byReference: false, type: "Foo", value: null},

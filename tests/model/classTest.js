@@ -42,7 +42,7 @@ describe('class', function () {
                 ],
                 name: "foo",
                 visibility: "protected",
-                abstract: true,
+                abstract: false,
                 static: true,
                 final: true,
                 type: null,
@@ -85,7 +85,10 @@ final abstract class Test extends AbstractTest implements Bar, Foo, Plop
      * @param Foo $foo
      * @param $bar
      */
-    final abstract static protected function foo(Foo $foo, &$bar = 42);
+    final static protected function foo(Foo $foo, &$bar = 42)
+    {
+        // TODO
+    }
 }`;
 
     it("set", function () {
