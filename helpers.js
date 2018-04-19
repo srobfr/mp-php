@@ -35,7 +35,7 @@ function phpDocTypeToPhpType(phpDocType) {
     types.forEach(type => {
         let m;
         if (type === "null") isNullable = true;
-        else if (m = type.match(/^(.+?)\[\]$/)) {
+        else if (m = type.match(/^((.+?)\[\]|\[.*\])$/)) {
             r = m[1];
             isArray = true;
         } else {

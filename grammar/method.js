@@ -120,12 +120,13 @@ module.exports = function (g) {
     g.funcReturnType = optional([g.ow, ":", g.ow, g.fqn]);
     g.funcReturnType.buildNode = function (self) {
         self.type = function (type) {
-            const $fqn = self.children[0];
-            if (type === undefined) return $fqn ? $fqn.text() : null;
+            const $fqn = (self.children[0] ? self.children[0].children[3] : null);
+            if (type === undefined) return $fqn ? phpTypeToPhpDocType($fqn.text()) : null;
             if (type === null) self.text('');
             else if (!type.match(/^(mixed|void|null)$/)) {
-                if ($fqn) $fqn.text(type);
-                else self.text(`: ${type}`);
+                const phpType = phpDocTypeToPhpType(type);
+                if ($fqn) $fqn.text(phpType);
+                else self.text(`: ${phpType}`);
             }
             return self;
         };
