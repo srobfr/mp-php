@@ -3,7 +3,7 @@ const {multiple, not, optional, optmul, or} = require("microparser").grammarHelp
 const {phpTypeToPhpDocType, phpDocTypeToPhpType} = require(__dirname + "/../helpers.js");
 
 module.exports = function (g) {
-    g.funcArgType = [optional("?"), g.fqn];
+    g.funcArgType = [g.type];
     g.funcArgType.buildNode = function (self) {
         self.type = function (phpDocType) {
             if (phpDocType === undefined) return phpTypeToPhpDocType(self.text());
@@ -18,8 +18,11 @@ module.exports = function (g) {
             let $funcArgType = self.children[0];
             if (type === undefined) return $funcArgType ? $funcArgType.findOneByGrammar(g.funcArgType).type() : null;
 
-            // if (type && type.match(/^(string|int(eger)?|bool(ean)?|mixed|void)/)) type = null; // PHP5
-            if (type && type.match(/^(mixed|void)/)) type = null; // PHP7
+            if (process.env.PHP === '5') {
+                if (type && type.match(/^(string|int(eger)?|bool(ean)?|mixed|void)/)) type = null; // PHP5
+            } else {
+                if (type && type.match(/^(mixed|void)/)) type = null; // PHP7
+            }
 
             if (type === null) {
                 if ($funcArgType) self.empty();
@@ -117,15 +120,15 @@ module.exports = function (g) {
         };
     };
 
-    g.funcReturnType = optional([g.ow, ":", g.ow, g.fqn]);
+    g.funcReturnType = optional([g.ow, ":", g.ow, g.type]);
     g.funcReturnType.buildNode = function (self) {
         self.type = function (type) {
-            const $fqn = (self.children[0] ? self.children[0].children[3] : null);
-            if (type === undefined) return $fqn ? phpTypeToPhpDocType($fqn.text()) : null;
+            const $type = (self.children[0] ? self.children[0].children[3] : null);
+            if (type === undefined) return $type ? phpTypeToPhpDocType($type.text()) : null;
             if (type === null) self.text('');
             else if (!type.match(/^(mixed|void|null)$/)) {
                 const phpType = phpDocTypeToPhpType(type);
-                if ($fqn) $fqn.text(phpType);
+                if ($type) $type.text(phpType);
                 else self.text(`: ${phpType}`);
             }
             return self;
@@ -264,7 +267,7 @@ module.exports = function (g) {
                 }
             }
 
-            self.children[2].type(type);
+            if (process.env.PHP !== '5') self.children[2].type(type);
 
             return self;
         };

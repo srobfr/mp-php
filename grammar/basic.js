@@ -24,6 +24,8 @@ module.exports = function (g) {
     g.fqn = [g.optFirstBackslash, multiple(g.ident, "\\")];
     g.fqn.default = "Todo";
 
+    g.type = [optional("?"), g.fqn];
+
     g.keywords = or("null", "true", "false");
 
     // Parentheses block
